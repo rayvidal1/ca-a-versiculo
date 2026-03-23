@@ -1,0 +1,211 @@
+import { useRef } from 'react';
+import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+
+import { palette } from '../theme/palette.js';
+
+function resolveGridMetrics(width, size) {
+  const horizontalPadding = size >= 10 ? 12 : 16;
+  const gap = size >= 9 ? 4 : 6;
+  const usableWidth = Math.min(width - 36, 420) - horizontalPadding * 2;
+  const cellSize = Math.floor((usableWidth - gap * (size - 1)) / size);
+
+  return {
+    cellSize,
+    gap,
+    horizontalPadding,
+    letterSize: Math.max(14, Math.floor(cellSize * 0.42)),
+  };
+}
+
+export default function WordSearchGrid({
+  grid,
+  selectedCellMap,
+  foundCellMap,
+  selectionInvalid,
+  onSelectionStart,
+  onSelectionMove,
+  onSelectionEnd,
+  disabled,
+}) {
+  const { width } = useWindowDimensions();
+  const size = grid.length;
+  const metrics = resolveGridMetrics(width, size);
+  const gridRef = useRef(null);
+  const gridOriginRef = useRef({ x: 0, y: 0 });
+
+  function getCellFromPagePoint(pageX, pageY) {
+    const relativeX = pageX - gridOriginRef.current.x - metrics.horizontalPadding;
+    const relativeY = pageY - gridOriginRef.current.y - metrics.horizontalPadding;
+
+    const boardWidth = metrics.cellSize * size + metrics.gap * (size - 1);
+    const boardHeight = boardWidth;
+
+    if (
+      relativeX < 0 ||
+      relativeY < 0 ||
+      relativeX > boardWidth ||
+      relativeY > boardHeight
+    ) {
+      return null;
+    }
+
+    const stride = metrics.cellSize + metrics.gap;
+    const col = Math.floor(relativeX / stride);
+    const row = Math.floor(relativeY / stride);
+
+    if (row < 0 || row >= size || col < 0 || col >= size) {
+      return null;
+    }
+
+    const cellOffsetX = relativeX - col * stride;
+    const cellOffsetY = relativeY - row * stride;
+
+    if (cellOffsetX > metrics.cellSize || cellOffsetY > metrics.cellSize) {
+      return null;
+    }
+
+    return grid[row]?.[col] ?? null;
+  }
+
+  function handleTouch(nativeEvent, callback) {
+    if (disabled) {
+      return;
+    }
+
+    const cell = getCellFromPagePoint(nativeEvent.pageX, nativeEvent.pageY);
+
+    if (cell) {
+      callback(cell);
+    }
+  }
+
+  function handleLayout() {
+    gridRef.current?.measureInWindow((x, y) => {
+      gridOriginRef.current = { x, y };
+    });
+  }
+
+  return (
+    <View style={styles.wrapper}>
+      <Text style={styles.title}>Grade</Text>
+      <View
+        ref={gridRef}
+        style={[
+          styles.gridFrame,
+          {
+            padding: metrics.horizontalPadding,
+            gap: metrics.gap,
+          },
+        ]}
+        onLayout={handleLayout}
+        onStartShouldSetResponder={() => !disabled}
+        onMoveShouldSetResponder={() => !disabled}
+        onResponderGrant={({ nativeEvent }) =>
+          handleTouch(nativeEvent, onSelectionStart)
+        }
+        onResponderMove={({ nativeEvent }) =>
+          handleTouch(nativeEvent, onSelectionMove)
+        }
+        onResponderRelease={onSelectionEnd}
+        onResponderTerminate={onSelectionEnd}
+      >
+        {grid.map((row, rowIndex) => (
+          <View key={`row-${rowIndex}`} style={[styles.row, { gap: metrics.gap }]}>
+            {row.map((cell) => {
+              const cellKey = `${cell.row}-${cell.col}`;
+              const foundState = foundCellMap[cellKey];
+              const isFound = Boolean(foundState);
+              const isSelected = Boolean(selectedCellMap[cellKey]);
+
+              return (
+                <View
+                  key={cellKey}
+                  style={[
+                    styles.cell,
+                    { width: metrics.cellSize, height: metrics.cellSize },
+                    isFound && [
+                      styles.cellFound,
+                      {
+                        backgroundColor: foundState.color?.fill || palette.found,
+                        borderColor: foundState.color?.border || palette.found,
+                      },
+                    ],
+                    !isFound && isSelected && (selectionInvalid ? styles.cellInvalid : styles.cellSelected),
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.cellLetter,
+                      { fontSize: metrics.letterSize },
+                      isFound && styles.cellLetterFound,
+                      !isFound && isSelected && (selectionInvalid ? styles.cellLetterInvalid : styles.cellLetterSelected),
+                    ]}
+                  >
+                    {cell.letter}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  wrapper: {
+    backgroundColor: palette.surface,
+    borderRadius: 28,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: palette.border,
+    gap: 14,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: palette.text,
+  },
+  gridFrame: {
+    backgroundColor: palette.grid,
+    borderRadius: 22,
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  cell: {
+    borderRadius: 14,
+    backgroundColor: palette.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cellSelected: {
+    backgroundColor: palette.selectionSoft,
+    borderWidth: 1,
+    borderColor: palette.selection,
+  },
+  cellInvalid: {
+    backgroundColor: palette.selectionInvalidSoft,
+    borderWidth: 1,
+    borderColor: palette.selectionInvalid,
+  },
+  cellFound: {
+    borderWidth: 1,
+  },
+  cellLetter: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: palette.text,
+  },
+  cellLetterSelected: {
+    color: palette.text,
+  },
+  cellLetterInvalid: {
+    color: palette.selectionInvalid,
+  },
+  cellLetterFound: {
+    color: palette.white,
+  },
+});
