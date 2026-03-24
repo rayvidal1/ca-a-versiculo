@@ -1,4 +1,3 @@
-import { useRef } from 'react';
 import { ImageBackground, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
 import { palette } from '../theme/palette.js';
@@ -31,12 +30,10 @@ export default function WordSearchGrid({
   const { width } = useWindowDimensions();
   const size = grid.length;
   const metrics = resolveGridMetrics(width, size);
-  const gridRef = useRef(null);
-  const gridOriginRef = useRef({ x: 0, y: 0 });
-
-  function getCellFromPagePoint(pageX, pageY) {
-    const relativeX = pageX - gridOriginRef.current.x - metrics.horizontalPadding;
-    const relativeY = pageY - gridOriginRef.current.y - metrics.horizontalPadding;
+  // locationX/locationY são relativas ao próprio gridFrame — sem offset externo
+  function getCellFromLocation(locationX, locationY) {
+    const relativeX = locationX - metrics.horizontalPadding;
+    const relativeY = locationY - metrics.horizontalPadding;
 
     const boardWidth = metrics.cellSize * size + metrics.gap * (size - 1);
     const boardHeight = boardWidth;
@@ -73,22 +70,15 @@ export default function WordSearchGrid({
       return;
     }
 
-    const cell = getCellFromPagePoint(nativeEvent.pageX, nativeEvent.pageY);
+    const cell = getCellFromLocation(nativeEvent.locationX, nativeEvent.locationY);
 
     if (cell) {
       callback(cell);
     }
   }
 
-  function handleLayout() {
-    gridRef.current?.measureInWindow((x, y) => {
-      gridOriginRef.current = { x, y };
-    });
-  }
-
   const gridContent = (
     <View
-      ref={gridRef}
       style={[
         styles.gridFrame,
         {
@@ -96,7 +86,6 @@ export default function WordSearchGrid({
           gap: metrics.gap,
         },
       ]}
-      onLayout={handleLayout}
       onStartShouldSetResponder={() => !disabled}
       onMoveShouldSetResponder={() => !disabled}
       onResponderGrant={({ nativeEvent }) =>

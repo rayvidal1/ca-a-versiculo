@@ -36,20 +36,34 @@ function canPlaceWord(grid, word, startRow, startCol, direction) {
   return true;
 }
 
-function placeWord(grid, word, preferredDirections = DIRECTIONS) {
-  const attempts = [];
+function shuffle(array) {
+  for (let i = array.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
 
-  preferredDirections.forEach((direction) => {
+function placeWord(grid, word, preferredDirections = DIRECTIONS) {
+  // Gera e embaralha posições para cada direção separadamente,
+  // depois intercala para garantir que ambas as direções sejam tentadas uniformemente.
+  const byDirection = preferredDirections.map((direction) => {
+    const positions = [];
     for (let row = 0; row < grid.length; row += 1) {
       for (let col = 0; col < grid.length; col += 1) {
-        attempts.push({ row, col, direction });
+        positions.push({ row, col, direction });
       }
     }
+    return shuffle(positions);
   });
 
-  for (let i = attempts.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [attempts[i], attempts[j]] = [attempts[j], attempts[i]];
+  // Intercala: tenta uma posição de cada direção por vez
+  const maxLen = Math.max(...byDirection.map((a) => a.length));
+  const attempts = [];
+  for (let i = 0; i < maxLen; i += 1) {
+    byDirection.forEach((positions) => {
+      if (positions[i]) attempts.push(positions[i]);
+    });
   }
 
   for (const attempt of attempts) {
@@ -98,10 +112,10 @@ export function generateWordSearchGrid(targetWords, options = {}) {
     .sort((left, right) => right.length - left.length);
 
   const placements = sortedWords.map((word, index) => {
-    const directions =
-      index === 0 && word.length >= Math.max(6, size)
-        ? [{ rowStep: 1, colStep: 0 }]
-        : DIRECTIONS;
+    // Alterna a direção preferida: índices pares começam com horizontal, ímpares com vertical
+    const directions = index % 2 === 0
+      ? [{ rowStep: 0, colStep: 1 }, { rowStep: 1, colStep: 0 }]
+      : [{ rowStep: 1, colStep: 0 }, { rowStep: 0, colStep: 1 }];
 
     const placement = placeWord(grid, word, directions);
 
