@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
 import { palette } from '../theme/palette.js';
@@ -33,16 +33,22 @@ export default function WordSearchGrid({
   const gridRef = useRef(null);
   const gridOriginRef = useRef({ x: 0, y: 0 });
 
-  function measureOrigin() {
+  const measureOrigin = useCallback(() => {
     gridRef.current?.measureInWindow((x, y) => {
       gridOriginRef.current = { x, y };
     });
-  }
+  }, []);
+
+  // Re-mede sempre que o grid mudar (novo versículo) — aguarda o VerseCard
+  // terminar de renderizar antes de capturar a posição final da grade
+  useEffect(() => {
+    const t1 = setTimeout(measureOrigin, 100);
+    const t2 = setTimeout(measureOrigin, 400);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [grid, measureOrigin]);
 
   function handleLayout() {
-    // Mede imediatamente e de novo após 150ms para capturar o reflow do VerseCard
     measureOrigin();
-    setTimeout(measureOrigin, 150);
   }
 
   function getCellFromPagePoint(pageX, pageY) {
