@@ -1,4 +1,4 @@
-import { StyleSheet, View } from 'react-native';
+import { ImageBackground, StyleSheet, View } from 'react-native';
 import { useMemo, useState } from 'react';
 
 import images from '../assets/images.js';
@@ -44,7 +44,12 @@ export default function VerseHuntScreen() {
   }
 
   return (
-    <View style={styles.screen}>
+    <ImageBackground
+      source={backgroundImage}
+      style={styles.screen}
+      resizeMode="cover"
+    >
+      <View style={styles.overlay} />
       <VerseCard
         reference={verse.reference}
         tokens={verse.tokens}
@@ -62,9 +67,8 @@ export default function VerseHuntScreen() {
         onSelectionMove={handleSelectionMove}
         onSelectionEnd={handleSelectionEnd}
         disabled={isComplete}
-        backgroundImage={backgroundImage}
       />
-    </View>
+    </ImageBackground>
   );
 }
 
@@ -75,5 +79,9 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 24,
     gap: 16,
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.35)',
   },
 });

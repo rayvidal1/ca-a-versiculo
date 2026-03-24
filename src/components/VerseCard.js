@@ -48,16 +48,13 @@ export default function VerseCard({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: palette.surface,
+    backgroundColor: 'rgba(255,255,255,0.92)',
     borderRadius: 24,
     padding: 18,
-    borderWidth: 1,
-    borderColor: palette.border,
     ...shadow,
   },
   cardComplete: {
-    backgroundColor: palette.successSoft,
-    borderColor: palette.primary,
+    backgroundColor: 'rgba(224,243,232,0.95)',
   },
   header: {
     flexDirection: 'row',

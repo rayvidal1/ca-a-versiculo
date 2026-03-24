@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { ImageBackground, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
 import { palette } from '../theme/palette.js';
 
@@ -26,7 +26,6 @@ export default function WordSearchGrid({
   onSelectionMove,
   onSelectionEnd,
   disabled,
-  backgroundImage,
 }) {
   const { width } = useWindowDimensions();
   const size = grid.length;
@@ -156,22 +155,8 @@ export default function WordSearchGrid({
     </View>
   );
 
-  if (backgroundImage) {
-    return (
-      <ImageBackground
-        source={backgroundImage}
-        style={styles.wrapper}
-        imageStyle={styles.backgroundImage}
-        resizeMode="cover"
-      >
-        <View style={styles.overlay} />
-        {gridContent}
-      </ImageBackground>
-    );
-  }
-
   return (
-    <View style={[styles.wrapper, styles.wrapperFallback]}>
+    <View style={styles.wrapper}>
       {gridContent}
     </View>
   );
@@ -180,23 +165,11 @@ export default function WordSearchGrid({
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
+    backgroundColor: '#1B2D5A',
     borderRadius: 24,
-    borderWidth: 1,
-    borderColor: palette.border,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
-  },
-  wrapperFallback: {
-    backgroundColor: palette.surface,
-  },
-  backgroundImage: {
-    borderRadius: 24,
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.38)',
-    borderRadius: 24,
   },
   gridFrame: {
     borderRadius: 18,
@@ -208,7 +181,7 @@ const styles = StyleSheet.create({
   },
   cell: {
     borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: 'rgba(255,255,255,0.10)',
     justifyContent: 'center',
     alignItems: 'center',
   },
