@@ -16,7 +16,7 @@ function resolveGridMetrics(width, rowCount, colCount) {
     horizontalPadding,
     boardWidth: cellSize * colCount + gap * (colCount - 1),
     boardHeight: cellSize * rowCount + gap * (rowCount - 1),
-    letterSize: Math.max(11, Math.floor(cellSize * 0.42)),
+    letterSize: Math.max(13, Math.floor(cellSize * 0.5)),
   };
 }
 
@@ -74,9 +74,10 @@ export default function WordSearchGrid({
     });
   }, []);
 
+  // Mantém a medição atualizada após cada mudança de layout
   useEffect(() => {
     const t1 = setTimeout(measureOrigin, 100);
-    const t2 = setTimeout(measureOrigin, 400);
+    const t2 = setTimeout(measureOrigin, 500);
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
@@ -87,9 +88,9 @@ export default function WordSearchGrid({
     measureOrigin();
   }
 
-  function getCellFromPagePoint(pageX, pageY) {
-    const relativeX = pageX - gridOriginRef.current.x - metrics.horizontalPadding;
-    const relativeY = pageY - gridOriginRef.current.y - metrics.horizontalPadding;
+  function getCellFromPoint(originX, originY, pageX, pageY) {
+    const relativeX = pageX - originX - metrics.horizontalPadding;
+    const relativeY = pageY - originY - metrics.horizontalPadding;
 
     if (
       relativeX < 0 ||
@@ -118,16 +119,26 @@ export default function WordSearchGrid({
     return grid[row]?.[col] ?? null;
   }
 
-  function handleTouch(nativeEvent, callback) {
-    if (disabled) {
-      return;
-    }
+  // No início do toque, mede a posição AGORA (garantia de coordenadas frescas)
+  // e processa a célula dentro do callback — elimina stale do measureInWindow
+  function handleTouchStart(nativeEvent, callback) {
+    if (disabled) return;
+    gridRef.current?.measureInWindow((x, y) => {
+      gridOriginRef.current = { x, y };
+      const cell = getCellFromPoint(x, y, nativeEvent.pageX, nativeEvent.pageY);
+      if (cell) callback(cell);
+    });
+  }
 
-    const cell = getCellFromPagePoint(nativeEvent.pageX, nativeEvent.pageY);
-
-    if (cell) {
-      callback(cell);
-    }
+  function handleTouchMove(nativeEvent, callback) {
+    if (disabled) return;
+    const cell = getCellFromPoint(
+      gridOriginRef.current.x,
+      gridOriginRef.current.y,
+      nativeEvent.pageX,
+      nativeEvent.pageY
+    );
+    if (cell) callback(cell);
   }
 
   const foundLineThickness = Math.max(16, Math.floor(metrics.cellSize * 0.68));
@@ -152,10 +163,10 @@ export default function WordSearchGrid({
         onStartShouldSetResponder={() => !disabled}
         onMoveShouldSetResponder={() => !disabled}
         onResponderGrant={({ nativeEvent }) =>
-          handleTouch(nativeEvent, onSelectionStart)
+          handleTouchStart(nativeEvent, onSelectionStart)
         }
         onResponderMove={({ nativeEvent }) =>
-          handleTouch(nativeEvent, onSelectionMove)
+          handleTouchMove(nativeEvent, onSelectionMove)
         }
         onResponderRelease={onSelectionEnd}
         onResponderTerminate={onSelectionEnd}
