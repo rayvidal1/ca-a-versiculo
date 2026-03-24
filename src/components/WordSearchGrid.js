@@ -23,6 +23,7 @@ export default function WordSearchGrid({
   selectedCellMap,
   foundCellMap,
   selectionInvalid,
+  contentInsetTop = 0,
   onSelectionStart,
   onSelectionMove,
   onSelectionEnd,
@@ -107,6 +108,9 @@ export default function WordSearchGrid({
         style={[
           styles.gridFrame,
           {
+            marginTop: contentInsetTop,
+          },
+          {
             padding: metrics.horizontalPadding,
             gap: metrics.gap,
           },
@@ -178,7 +182,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#1B2D5A',
     borderRadius: 24,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     alignItems: 'center',
     overflow: 'hidden',
   },

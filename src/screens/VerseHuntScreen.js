@@ -66,21 +66,26 @@ export default function VerseHuntScreen() {
         onNextVerse={handleNextVerse}
         isComplete={isComplete}
       />
-      <GameModeSelector
-        modes={verseHuntModes}
-        selectedModeId={selectedMode.id}
-        onSelectMode={setSelectedModeId}
-      />
-      <WordSearchGrid
-        grid={grid}
-        selectedCellMap={selectedCellMap}
-        foundCellMap={foundCellMap}
-        selectionInvalid={selectionInvalid}
-        onSelectionStart={handleSelectionStart}
-        onSelectionMove={handleSelectionMove}
-        onSelectionEnd={handleSelectionEnd}
-        disabled={isComplete}
-      />
+      <View style={styles.boardArea}>
+        <WordSearchGrid
+          grid={grid}
+          selectedCellMap={selectedCellMap}
+          foundCellMap={foundCellMap}
+          selectionInvalid={selectionInvalid}
+          contentInsetTop={52}
+          onSelectionStart={handleSelectionStart}
+          onSelectionMove={handleSelectionMove}
+          onSelectionEnd={handleSelectionEnd}
+          disabled={isComplete}
+        />
+        <View style={styles.modeOverlay}>
+          <GameModeSelector
+            modes={verseHuntModes}
+            selectedModeId={selectedMode.id}
+            onSelectMode={setSelectedModeId}
+          />
+        </View>
+      </View>
     </ImageBackground>
   );
 }
@@ -89,9 +94,20 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 24,
-    gap: 16,
+    paddingTop: 12,
+    paddingBottom: 16,
+    gap: 12,
+  },
+  boardArea: {
+    flex: 1,
+    position: 'relative',
+  },
+  modeOverlay: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    right: 8,
+    zIndex: 2,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
