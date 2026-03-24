@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useState } from 'react';
 
 import VerseCard from '../components/VerseCard.js';
@@ -33,11 +33,7 @@ export default function VerseHuntScreen() {
   }
 
   return (
-    <ScrollView
-      style={styles.scrollView}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
+    <View style={styles.screen}>
       <VerseCard
         reference={verse.reference}
         tokens={verse.tokens}
@@ -56,18 +52,16 @@ export default function VerseHuntScreen() {
         onSelectionEnd={handleSelectionEnd}
         disabled={isComplete}
       />
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  scrollView: {
+  screen: {
     flex: 1,
-  },
-  content: {
-    paddingHorizontal: 20,
-    paddingTop: 18,
-    paddingBottom: 32,
-    gap: 18,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 24,
+    gap: 16,
   },
 });

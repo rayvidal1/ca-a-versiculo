@@ -87,7 +87,6 @@ export default function WordSearchGrid({
 
   return (
     <View style={styles.wrapper}>
-      <Text style={styles.title}>Grade</Text>
       <View
         ref={gridRef}
         style={[
@@ -155,21 +154,18 @@ export default function WordSearchGrid({
 
 const styles = StyleSheet.create({
   wrapper: {
+    flex: 1,
     backgroundColor: palette.surface,
-    borderRadius: 28,
-    padding: 18,
+    borderRadius: 24,
+    padding: 14,
     borderWidth: 1,
     borderColor: palette.border,
-    gap: 14,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: palette.text,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   gridFrame: {
     backgroundColor: palette.grid,
-    borderRadius: 22,
+    borderRadius: 20,
   },
   row: {
     flexDirection: 'row',
