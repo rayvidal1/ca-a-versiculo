@@ -14,16 +14,48 @@ function resolveGridMetrics(width, rowCount, colCount) {
     cellSize,
     gap,
     horizontalPadding,
+    boardWidth: cellSize * colCount + gap * (colCount - 1),
+    boardHeight: cellSize * rowCount + gap * (rowCount - 1),
     letterSize: Math.max(11, Math.floor(cellSize * 0.42)),
+  };
+}
+
+function getCellCenter(cell, metrics) {
+  const stride = metrics.cellSize + metrics.gap;
+
+  return {
+    x: metrics.horizontalPadding + cell.col * stride + metrics.cellSize / 2,
+    y: metrics.horizontalPadding + cell.row * stride + metrics.cellSize / 2,
+  };
+}
+
+function buildHighlightStyle(cells, metrics, thickness) {
+  if (!cells?.length) {
+    return null;
+  }
+
+  const start = getCellCenter(cells[0], metrics);
+  const end = getCellCenter(cells[cells.length - 1], metrics);
+  const deltaX = end.x - start.x;
+  const deltaY = end.y - start.y;
+  const distance = Math.hypot(deltaX, deltaY);
+  const width = distance + metrics.cellSize * 0.92;
+
+  return {
+    left: (start.x + end.x) / 2 - width / 2,
+    top: (start.y + end.y) / 2 - thickness / 2,
+    width,
+    height: thickness,
+    borderRadius: thickness / 2,
+    transform: [{ rotateZ: `${Math.atan2(deltaY, deltaX)}rad` }],
   };
 }
 
 export default function WordSearchGrid({
   grid,
-  selectedCellMap,
-  foundCellMap,
+  selectedCells = [],
+  foundPlacements = [],
   selectionInvalid,
-  contentInsetTop = 0,
   onSelectionStart,
   onSelectionMove,
   onSelectionEnd,
@@ -59,14 +91,11 @@ export default function WordSearchGrid({
     const relativeX = pageX - gridOriginRef.current.x - metrics.horizontalPadding;
     const relativeY = pageY - gridOriginRef.current.y - metrics.horizontalPadding;
 
-    const boardWidth = metrics.cellSize * colCount + metrics.gap * (colCount - 1);
-    const boardHeight = metrics.cellSize * rowCount + metrics.gap * (rowCount - 1);
-
     if (
       relativeX < 0 ||
       relativeY < 0 ||
-      relativeX > boardWidth ||
-      relativeY > boardHeight
+      relativeX > metrics.boardWidth ||
+      relativeY > metrics.boardHeight
     ) {
       return null;
     }
@@ -101,15 +130,19 @@ export default function WordSearchGrid({
     }
   }
 
+  const foundLineThickness = Math.max(16, Math.floor(metrics.cellSize * 0.68));
+  const activeLineThickness = Math.max(18, Math.floor(metrics.cellSize * 0.78));
+  const activeSelectionStyle =
+    selectedCells.length > 1 && !selectionInvalid
+      ? buildHighlightStyle(selectedCells, metrics, activeLineThickness)
+      : null;
+
   return (
     <View style={styles.wrapper}>
       <View
         ref={gridRef}
         style={[
           styles.gridFrame,
-          {
-            marginTop: contentInsetTop,
-          },
           {
             padding: metrics.horizontalPadding,
             gap: metrics.gap,
@@ -127,49 +160,62 @@ export default function WordSearchGrid({
         onResponderRelease={onSelectionEnd}
         onResponderTerminate={onSelectionEnd}
       >
+        <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+          {foundPlacements.map((placement) => {
+            const lineStyle = buildHighlightStyle(
+              placement.cells,
+              metrics,
+              foundLineThickness
+            );
+
+            if (!lineStyle) {
+              return null;
+            }
+
+            return (
+              <View
+                key={`found-line-${placement.word}`}
+                style={[
+                  styles.highlightLine,
+                  lineStyle,
+                  {
+                    backgroundColor:
+                      placement.color?.soft || palette.foundSoft,
+                  },
+                ]}
+              />
+            );
+          })}
+          {activeSelectionStyle ? (
+            <View
+              style={[
+                styles.highlightLine,
+                styles.activeSelectionLine,
+                activeSelectionStyle,
+              ]}
+            />
+          ) : null}
+        </View>
         {grid.map((row, rowIndex) => (
           <View key={`row-${rowIndex}`} style={[styles.row, { gap: metrics.gap }]}>
-            {row.map((cell) => {
-              const cellKey = `${cell.row}-${cell.col}`;
-              const foundState = foundCellMap[cellKey];
-              const isFound = Boolean(foundState);
-              const isSelected = Boolean(selectedCellMap[cellKey]);
-
-              return (
-                <View
-                  key={cellKey}
+            {row.map((cell) => (
+              <View
+                key={`${cell.row}-${cell.col}`}
+                style={[
+                  styles.cell,
+                  { width: metrics.cellSize, height: metrics.cellSize },
+                ]}
+              >
+                <Text
                   style={[
-                    styles.cell,
-                    { width: metrics.cellSize, height: metrics.cellSize },
-                    isFound && [
-                      styles.cellFound,
-                      {
-                        backgroundColor: foundState.color?.fill || palette.found,
-                        borderColor: foundState.color?.border || palette.found,
-                      },
-                    ],
-                    !isFound &&
-                      isSelected &&
-                      (selectionInvalid ? styles.cellInvalid : styles.cellSelected),
+                    styles.cellLetter,
+                    { fontSize: metrics.letterSize },
                   ]}
                 >
-                  <Text
-                    style={[
-                      styles.cellLetter,
-                      { fontSize: metrics.letterSize },
-                      isFound && styles.cellLetterFound,
-                      !isFound &&
-                        isSelected &&
-                        (selectionInvalid
-                          ? styles.cellLetterInvalid
-                          : styles.cellLetterSelected),
-                    ]}
-                  >
-                    {cell.letter}
-                  </Text>
-                </View>
-              );
-            })}
+                  {cell.letter}
+                </Text>
+              </View>
+            ))}
           </View>
         ))}
       </View>
@@ -179,52 +225,32 @@ export default function WordSearchGrid({
 
 const styles = StyleSheet.create({
   wrapper: {
-    flex: 1,
-    backgroundColor: '#1B2D5A',
-    borderRadius: 24,
-    justifyContent: 'flex-start',
+    alignSelf: 'center',
     alignItems: 'center',
-    overflow: 'hidden',
+    justifyContent: 'center',
   },
   gridFrame: {
-    borderRadius: 18,
+    borderRadius: 22,
     backgroundColor: 'transparent',
   },
   row: {
     flexDirection: 'row',
     justifyContent: 'center',
   },
+  highlightLine: {
+    position: 'absolute',
+    opacity: 0.96,
+  },
+  activeSelectionLine: {
+    backgroundColor: 'rgba(224, 44, 44, 0.88)',
+  },
   cell: {
-    borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.10)',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  cellSelected: {
-    backgroundColor: palette.selectionSoft,
-    borderWidth: 1,
-    borderColor: palette.selection,
-  },
-  cellInvalid: {
-    backgroundColor: palette.selectionInvalidSoft,
-    borderWidth: 1,
-    borderColor: palette.selectionInvalid,
-  },
-  cellFound: {
-    borderWidth: 1,
   },
   cellLetter: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  cellLetterSelected: {
-    color: palette.text,
-  },
-  cellLetterInvalid: {
-    color: palette.selectionInvalid,
-  },
-  cellLetterFound: {
-    color: palette.white,
+    color: '#111111',
   },
 });

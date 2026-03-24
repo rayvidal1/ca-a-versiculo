@@ -41,15 +41,16 @@ const styles = StyleSheet.create({
   optionsRow: {
     flexDirection: 'row',
     gap: 8,
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
+    marginBottom: 8,
   },
   optionButton: {
     flex: 1,
     minHeight: 44,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.35)',
-    backgroundColor: 'rgba(255,255,255,0.88)',
+    borderColor: 'rgba(36,53,45,0.14)',
+    backgroundColor: 'rgba(255,255,255,0.92)',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 10,
@@ -57,10 +58,10 @@ const styles = StyleSheet.create({
   },
   optionButtonSelected: {
     borderColor: palette.primary,
-    backgroundColor: 'rgba(223,242,232,0.96)',
+    backgroundColor: palette.primarySoft,
   },
   optionButtonPressed: {
-    backgroundColor: 'rgba(255,255,255,0.76)',
+    backgroundColor: palette.verse,
   },
   optionLabel: {
     fontSize: 14,

@@ -52,10 +52,10 @@ export default function VerseHuntScreen() {
   const {
     verse,
     grid,
-    selectedCellMap,
+    selectedCells,
     selectionInvalid,
+    foundPlacements,
     foundWordSet,
-    foundCellMap,
     isComplete,
     handleSelectionStart,
     handleSelectionMove,
@@ -83,22 +83,21 @@ export default function VerseHuntScreen() {
         isComplete={isComplete}
       />
       <View style={styles.boardArea}>
-        <WordSearchGrid
-          grid={grid}
-          selectedCellMap={selectedCellMap}
-          foundCellMap={foundCellMap}
-          selectionInvalid={selectionInvalid}
-          contentInsetTop={52}
-          onSelectionStart={handleSelectionStart}
-          onSelectionMove={handleSelectionMove}
-          onSelectionEnd={handleSelectionEnd}
-          disabled={isComplete}
-        />
-        <View style={styles.modeOverlay}>
+        <View style={styles.boardCard}>
           <GameModeSelector
             modes={verseHuntModes}
             selectedModeId={selectedMode.id}
             onSelectMode={setSelectedModeId}
+          />
+          <WordSearchGrid
+            grid={grid}
+            selectedCells={selectedCells}
+            foundPlacements={foundPlacements}
+            selectionInvalid={selectionInvalid}
+            onSelectionStart={handleSelectionStart}
+            onSelectionMove={handleSelectionMove}
+            onSelectionEnd={handleSelectionEnd}
+            disabled={isComplete}
           />
         </View>
       </View>
@@ -116,14 +115,15 @@ const styles = StyleSheet.create({
   },
   boardArea: {
     flex: 1,
-    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
   },
-  modeOverlay: {
-    position: 'absolute',
-    top: 8,
-    left: 8,
-    right: 8,
-    zIndex: 2,
+  boardCard: {
+    backgroundColor: 'rgba(255,255,255,0.96)',
+    borderRadius: 28,
+    paddingTop: 12,
+    paddingBottom: 16,
+    paddingHorizontal: 10,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
