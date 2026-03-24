@@ -1,13 +1,24 @@
 import { StyleSheet, View } from 'react-native';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
+import images from '../assets/images.js';
 import VerseCard from '../components/VerseCard.js';
 import WordSearchGrid from '../components/WordSearchGrid.js';
 import { useVerseHuntGame } from '../hooks/useVerseHuntGame.js';
 import { getInitialVerse, getRandomVerse } from '../services/verseSource.js';
 
+function pickImage(verseId) {
+  let hash = 0;
+  for (let i = 0; i < verseId.length; i++) {
+    hash = (hash * 31 + verseId.charCodeAt(i)) >>> 0;
+  }
+  return images[hash % images.length];
+}
+
 export default function VerseHuntScreen() {
   const [currentVerse, setCurrentVerse] = useState(() => getInitialVerse());
+  const backgroundImage = useMemo(() => pickImage(currentVerse.id), [currentVerse.id]);
+
   const {
     verse,
     grid,
@@ -20,11 +31,11 @@ export default function VerseHuntScreen() {
     handleSelectionMove,
     handleSelectionEnd,
   } = useVerseHuntGame(currentVerse, {
-    gridSize: 6,
-    minGridSize: 6,
-    maxGridSize: 6,
-    targetWordCount: 3,
-    maxWordLength: 6,
+    gridSize: 8,
+    minGridSize: 8,
+    maxGridSize: 8,
+    targetWordCount: 5,
+    maxWordLength: 7,
     includeDiagonal: false,
   });
 
@@ -51,6 +62,7 @@ export default function VerseHuntScreen() {
         onSelectionMove={handleSelectionMove}
         onSelectionEnd={handleSelectionEnd}
         disabled={isComplete}
+        backgroundImage={backgroundImage}
       />
     </View>
   );
