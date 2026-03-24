@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ImageBackground, StyleSheet, View } from 'react-native';
 
 import images from '../assets/images.js';
@@ -22,9 +22,12 @@ function pickImage(verseId) {
 }
 
 export default function VerseHuntScreen() {
-  const [currentVerse, setCurrentVerse] = useState(() => getInitialVerse());
   const [selectedModeId, setSelectedModeId] = useState(
     DEFAULT_VERSE_HUNT_MODE_ID
+  );
+  const hasModeInitializedRef = useRef(false);
+  const [currentVerse, setCurrentVerse] = useState(() =>
+    getInitialVerse(getVerseHuntModeConfig(DEFAULT_VERSE_HUNT_MODE_ID).gameOptions)
   );
   const backgroundImage = useMemo(
     () => pickImage(currentVerse.id),
@@ -34,6 +37,17 @@ export default function VerseHuntScreen() {
     () => getVerseHuntModeConfig(selectedModeId),
     [selectedModeId]
   );
+
+  useEffect(() => {
+    if (!hasModeInitializedRef.current) {
+      hasModeInitializedRef.current = true;
+      return;
+    }
+
+    setCurrentVerse((current) =>
+      getRandomVerse(current?.id, selectedMode.gameOptions)
+    );
+  }, [selectedMode.id, selectedMode.gameOptions]);
 
   const {
     verse,
@@ -49,7 +63,9 @@ export default function VerseHuntScreen() {
   } = useVerseHuntGame(currentVerse, selectedMode.gameOptions);
 
   function handleNextVerse() {
-    setCurrentVerse((current) => getRandomVerse(current.id));
+    setCurrentVerse((current) =>
+      getRandomVerse(current.id, selectedMode.gameOptions)
+    );
   }
 
   return (

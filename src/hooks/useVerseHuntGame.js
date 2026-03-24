@@ -7,6 +7,17 @@ import { processVerseForHunt } from '../utils/verseProcessing.js';
 import { buildCellMap, findMatchedPlacement } from '../utils/validation.js';
 import { generateWordSearchGrid, getCellKey } from '../utils/wordSearch.js';
 
+function getDirectionDistributionKey(directionDistribution) {
+  if (!directionDistribution) {
+    return '';
+  }
+
+  return Object.entries(directionDistribution)
+    .sort(([leftId], [rightId]) => leftId.localeCompare(rightId))
+    .map(([directionId, weight]) => `${directionId}:${weight}`)
+    .join(',');
+}
+
 function getOptionsKey(options = {}) {
   return [
     options.rows ?? '',
@@ -18,8 +29,12 @@ function getOptionsKey(options = {}) {
     options.minWordLength ?? '',
     options.minFallbackWordLength ?? '',
     options.maxWordLength ?? '',
+    getDirectionDistributionKey(options.directionDistribution),
     options.includeDiagonal ? '1' : '0',
     options.allowBackwards ? '1' : '0',
+    options.preferShortVerse ? '1' : '0',
+    options.shortVerseMaxLength ?? '',
+    options.autoAdjustDirectionWeights ? '1' : '0',
   ].join('|');
 }
 
@@ -28,8 +43,10 @@ function createGridState(targetWords, options) {
     rows: options.rows,
     cols: options.cols,
     gridSize: options.gridSize,
+    directionDistribution: options.directionDistribution,
     includeDiagonal: options.includeDiagonal ?? false,
     allowBackwards: options.allowBackwards ?? false,
+    autoAdjustDirectionWeights: options.autoAdjustDirectionWeights ?? false,
     maxAttempts: options.maxAttempts,
   });
 }
