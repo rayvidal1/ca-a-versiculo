@@ -10,51 +10,70 @@ export default function VerseCard({
   onNextVerse,
 }) {
   return (
-    <View style={[styles.card, isComplete && styles.cardComplete]}>
-      <View style={styles.header}>
-        <Text style={styles.reference}>{reference}</Text>
-        <Pressable style={styles.actionButton} onPress={onNextVerse}>
-          <Text style={styles.actionButtonText}>Novo</Text>
-        </Pressable>
+    <View style={styles.cardShell}>
+      <View style={styles.card}>
+        <View style={styles.glassGlow} pointerEvents="none" />
+        <View style={[styles.cardTint, isComplete && styles.cardTintComplete]}>
+          <View style={styles.header}>
+            <Text style={styles.reference}>{reference}</Text>
+            <Pressable style={styles.actionButton} onPress={onNextVerse}>
+              <Text style={styles.actionButtonText}>Novo</Text>
+            </Pressable>
+          </View>
+          <Text style={styles.verse}>
+            {tokens.map((token) => {
+              if (!token.isTarget) {
+                return (
+                  <Text key={token.id} style={styles.plainText}>
+                    {token.text}
+                  </Text>
+                );
+              }
+
+              const isFound = foundWordSet.has(token.normalized);
+
+              return (
+                <Text
+                  key={token.id}
+                  style={[
+                    styles.targetWord,
+                    isFound ? styles.targetWordFound : styles.targetWordPending,
+                  ]}
+                >
+                  {token.text}
+                </Text>
+              );
+            })}
+          </Text>
+        </View>
       </View>
-      <Text style={styles.verse}>
-        {tokens.map((token) => {
-          if (!token.isTarget) {
-            return (
-              <Text key={token.id} style={styles.plainText}>
-                {token.text}
-              </Text>
-            );
-          }
-
-          const isFound = foundWordSet.has(token.normalized);
-
-          return (
-            <Text
-              key={token.id}
-              style={[
-                styles.targetWord,
-                isFound ? styles.targetWordFound : styles.targetWordPending,
-              ]}
-            >
-              {token.text}
-            </Text>
-          );
-        })}
-      </Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: 'rgba(255,255,255,0.92)',
+  cardShell: {
     borderRadius: 24,
-    padding: 18,
+    overflow: 'hidden',
     ...shadow,
   },
-  cardComplete: {
-    backgroundColor: 'rgba(224,243,232,0.95)',
+  card: {
+    borderRadius: 24,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(255,255,255,0.14)',
+  },
+  glassGlow: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+  },
+  cardTint: {
+    padding: 18,
+    backgroundColor: 'rgba(255,255,255,0.42)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.32)',
+  },
+  cardTintComplete: {
+    backgroundColor: 'rgba(224,243,232,0.4)',
   },
   header: {
     flexDirection: 'row',
@@ -73,7 +92,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 999,
-    backgroundColor: palette.primarySoft,
+    backgroundColor: 'rgba(228, 241, 233, 0.72)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.34)',
   },
   actionButtonText: {
     fontSize: 12,

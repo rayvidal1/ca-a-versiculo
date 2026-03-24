@@ -75,30 +75,31 @@ export default function VerseHuntScreen() {
       resizeMode="cover"
     >
       <View style={styles.overlay} />
-      <VerseCard
-        reference={verse.reference}
-        tokens={verse.tokens}
-        foundWordSet={foundWordSet}
-        onNextVerse={handleNextVerse}
-        isComplete={isComplete}
-      />
-      <View style={styles.boardArea}>
-        <View style={styles.boardCard}>
-          <GameModeSelector
-            modes={verseHuntModes}
-            selectedModeId={selectedMode.id}
-            onSelectMode={setSelectedModeId}
-          />
-          <WordSearchGrid
-            grid={grid}
-            selectedCells={selectedCells}
-            foundPlacements={foundPlacements}
-            selectionInvalid={selectionInvalid}
-            onSelectionStart={handleSelectionStart}
-            onSelectionMove={handleSelectionMove}
-            onSelectionEnd={handleSelectionEnd}
-            disabled={isComplete}
-          />
+      <View style={styles.content}>
+        <VerseCard
+          reference={verse.reference}
+          tokens={verse.tokens}
+          foundWordSet={foundWordSet}
+          onNextVerse={handleNextVerse}
+          isComplete={isComplete}
+        />
+        <View style={styles.boardArea}>
+          <View style={styles.boardCard}>
+            <GameModeSelector
+              modes={verseHuntModes}
+              selectedModeId={selectedMode.id}
+              onSelectMode={setSelectedModeId}
+            />
+            <WordSearchGrid
+              grid={grid}
+              foundPlacements={foundPlacements}
+              includeDiagonal={selectedMode.gameOptions.includeDiagonal ?? false}
+              onSelectionStart={handleSelectionStart}
+              onSelectionMove={handleSelectionMove}
+              onSelectionEnd={handleSelectionEnd}
+              disabled={isComplete}
+            />
+          </View>
         </View>
       </View>
     </ImageBackground>
@@ -109,16 +110,18 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 16,
-    gap: 12,
+    paddingVertical: 20,
+  },
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    gap: 16,
   },
   boardArea: {
-    flex: 1,
     alignItems: 'center',
-    justifyContent: 'flex-start',
   },
   boardCard: {
+    alignSelf: 'center',
     backgroundColor: 'rgba(255,255,255,0.96)',
     borderRadius: 28,
     paddingTop: 12,

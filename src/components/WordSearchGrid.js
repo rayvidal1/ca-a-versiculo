@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef } from 'react';
-import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { memo, useRef } from 'react';
+import { Animated, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
 import { palette } from '../theme/palette.js';
 
@@ -22,7 +22,6 @@ function resolveGridMetrics(width, rowCount, colCount) {
 
 function getCellCenter(cell, metrics) {
   const stride = metrics.cellSize + metrics.gap;
-
   return {
     x: metrics.horizontalPadding + cell.col * stride + metrics.cellSize / 2,
     y: metrics.horizontalPadding + cell.row * stride + metrics.cellSize / 2,
@@ -30,9 +29,7 @@ function getCellCenter(cell, metrics) {
 }
 
 function buildHighlightStyle(cells, metrics, thickness) {
-  if (!cells?.length) {
-    return null;
-  }
+  if (!cells?.length) return null;
 
   const start = getCellCenter(cells[0], metrics);
   const end = getCellCenter(cells[cells.length - 1], metrics);
@@ -51,11 +48,100 @@ function buildHighlightStyle(cells, metrics, thickness) {
   };
 }
 
-export default function WordSearchGrid({
+// Converte locationX/Y (relativo ao gridFrame) em célula da grade.
+// locationX/Y já são relativos ao gridFrame porque todas as views filhas
+// têm pointerEvents="none", então o toque é sempre registrado no gridFrame.
+function getCellAtLocation(locationX, locationY, metrics, grid, rowCount, colCount) {
+  const relX = locationX - metrics.horizontalPadding;
+  const relY = locationY - metrics.horizontalPadding;
+
+  if (
+    relX < 0 ||
+    relY < 0 ||
+    relX > metrics.boardWidth ||
+    relY > metrics.boardHeight
+  ) {
+    return null;
+  }
+
+  const stride = metrics.cellSize + metrics.gap;
+  const col = Math.floor(relX / stride);
+  const row = Math.floor(relY / stride);
+
+  if (row < 0 || row >= rowCount || col < 0 || col >= colCount) return null;
+
+  // Rejeita se o toque caiu no gap entre células
+  if (relX - col * stride > metrics.cellSize) return null;
+  if (relY - row * stride > metrics.cellSize) return null;
+
+  return grid[row]?.[col] ?? null;
+}
+
+// Quantiza deslocamento (dx, dy) em uma das 8 direções canônicas.
+// Usa limiares tan(22.5°) ≈ 0.4142 e tan(67.5°) ≈ 2.4142 para divisão natural.
+function quantizeDirection(dx, dy, includeDiagonal) {
+  const adx = Math.abs(dx);
+  const ady = Math.abs(dy);
+  if (adx === 0 && ady === 0) return null;
+
+  const ratio = adx === 0 ? Infinity : ady / adx;
+
+  if (!includeDiagonal || ratio < 0.4142) {
+    return { stepRow: 0, stepCol: Math.sign(dx) };
+  }
+  if (ratio > 2.4142) {
+    return { stepRow: Math.sign(dy), stepCol: 0 };
+  }
+  return { stepRow: Math.sign(dy), stepCol: Math.sign(dx) };
+}
+
+// Projeta o toque atual (locationX/Y) na direção travada e retorna a célula snappada.
+// Tudo em coordenadas locais ao gridFrame — sem dependência de medição absoluta.
+function getSnappedEndCell(locationX, locationY, anchor, direction, grid, metrics) {
+  const rowCount = grid.length;
+  const colCount = grid[0]?.length ?? 0;
+  const stride = metrics.cellSize + metrics.gap;
+
+  // Centro da célula âncora em coordenadas locais
+  const anchorLocX = metrics.horizontalPadding + anchor.col * stride + metrics.cellSize / 2;
+  const anchorLocY = metrics.horizontalPadding + anchor.row * stride + metrics.cellSize / 2;
+
+  const dx = locationX - anchorLocX;
+  const dy = locationY - anchorLocY;
+
+  // Projeção do deslocamento na direção travada, convertida para passos de célula
+  let steps;
+  if (direction.stepRow === 0) {
+    steps = (dx * direction.stepCol) / stride;
+  } else if (direction.stepCol === 0) {
+    steps = (dy * direction.stepRow) / stride;
+  } else {
+    // Diagonal: stride diagonal = stride * sqrt(2)
+    steps = (dx * direction.stepCol + dy * direction.stepRow) / (stride * Math.SQRT2);
+  }
+
+  steps = Math.max(0, Math.round(steps));
+
+  // Clamp aos limites da grade
+  while (steps > 0) {
+    const r = anchor.row + direction.stepRow * steps;
+    const c = anchor.col + direction.stepCol * steps;
+    if (r >= 0 && r < rowCount && c >= 0 && c < colCount) break;
+    steps -= 1;
+  }
+
+  return (
+    grid[anchor.row + direction.stepRow * steps]?.[anchor.col + direction.stepCol * steps] ??
+    anchor
+  );
+}
+
+const BASE_LINE_WIDTH = 600;
+
+function WordSearchGrid({
   grid,
-  selectedCells = [],
   foundPlacements = [],
-  selectionInvalid,
+  includeDiagonal = false,
   onSelectionStart,
   onSelectionMove,
   onSelectionEnd,
@@ -65,93 +151,112 @@ export default function WordSearchGrid({
   const rowCount = grid.length;
   const colCount = grid[0]?.length ?? 0;
   const metrics = resolveGridMetrics(width, rowCount, colCount);
-  const gridRef = useRef(null);
-  const gridOriginRef = useRef({ x: 0, y: 0 });
+  const metricsRef = useRef(metrics);
+  metricsRef.current = metrics;
 
-  const measureOrigin = useCallback(() => {
-    gridRef.current?.measureInWindow((x, y) => {
-      gridOriginRef.current = { x, y };
-    });
-  }, []);
+  const anchorCellRef = useRef(null);
+  const lockedDirectionRef = useRef(null);
 
-  // Mantém a medição atualizada após cada mudança de layout
-  useEffect(() => {
-    const t1 = setTimeout(measureOrigin, 100);
-    const t2 = setTimeout(measureOrigin, 500);
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-    };
-  }, [grid, measureOrigin]);
+  // Valores animados — atualizados via .setValue(), sem re-render do React
+  const animTX = useRef(new Animated.Value(0)).current;
+  const animTY = useRef(new Animated.Value(0)).current;
+  const animScale = useRef(new Animated.Value(0)).current;
+  const animAngle = useRef(new Animated.Value(0)).current;
+  const animOpacity = useRef(new Animated.Value(0)).current;
 
-  function handleLayout() {
-    measureOrigin();
+  function updateActiveLine(anchorCell, endCell) {
+    const m = metricsRef.current;
+    const start = getCellCenter(anchorCell, m);
+    const end = getCellCenter(endCell, m);
+    const deltaX = end.x - start.x;
+    const deltaY = end.y - start.y;
+    const distance = Math.hypot(deltaX, deltaY);
+    const lineWidth = distance + m.cellSize * 0.92;
+    const thickness = Math.max(18, Math.floor(m.cellSize * 0.78));
+
+    animTX.setValue((start.x + end.x) / 2 - BASE_LINE_WIDTH / 2);
+    animTY.setValue((start.y + end.y) / 2 - thickness / 2);
+    animScale.setValue(lineWidth / BASE_LINE_WIDTH);
+    animAngle.setValue(Math.atan2(deltaY, deltaX));
+    animOpacity.setValue(1);
   }
 
-  function getCellFromPoint(originX, originY, pageX, pageY) {
-    const relativeX = pageX - originX - metrics.horizontalPadding;
-    const relativeY = pageY - originY - metrics.horizontalPadding;
-
-    if (
-      relativeX < 0 ||
-      relativeY < 0 ||
-      relativeX > metrics.boardWidth ||
-      relativeY > metrics.boardHeight
-    ) {
-      return null;
-    }
-
-    const stride = metrics.cellSize + metrics.gap;
-    const col = Math.floor(relativeX / stride);
-    const row = Math.floor(relativeY / stride);
-
-    if (row < 0 || row >= rowCount || col < 0 || col >= colCount) {
-      return null;
-    }
-
-    const cellOffsetX = relativeX - col * stride;
-    const cellOffsetY = relativeY - row * stride;
-
-    if (cellOffsetX > metrics.cellSize || cellOffsetY > metrics.cellSize) {
-      return null;
-    }
-
-    return grid[row]?.[col] ?? null;
-  }
-
-  // No início do toque, mede a posição AGORA (garantia de coordenadas frescas)
-  // e processa a célula dentro do callback — elimina stale do measureInWindow
+  // Início do toque: detecta célula via locationX/Y (relativo ao gridFrame),
+  // sem necessidade de measureInWindow ou coordenadas absolutas.
   function handleTouchStart(nativeEvent, callback) {
     if (disabled) return;
-    gridRef.current?.measureInWindow((x, y) => {
-      gridOriginRef.current = { x, y };
-      const cell = getCellFromPoint(x, y, nativeEvent.pageX, nativeEvent.pageY);
-      if (cell) callback(cell);
-    });
+    const m = metricsRef.current;
+    const cell = getCellAtLocation(
+      nativeEvent.locationX,
+      nativeEvent.locationY,
+      m,
+      grid,
+      rowCount,
+      colCount
+    );
+    if (cell) {
+      anchorCellRef.current = cell;
+      lockedDirectionRef.current = null;
+      animOpacity.setValue(0);
+      callback(cell);
+    }
   }
 
+  // Movimento: trava direção após sair da zona morta (~0.6 célula),
+  // depois projeta o toque na direção travada para snap discreto.
   function handleTouchMove(nativeEvent, callback) {
-    if (disabled) return;
-    const cell = getCellFromPoint(
-      gridOriginRef.current.x,
-      gridOriginRef.current.y,
-      nativeEvent.pageX,
-      nativeEvent.pageY
+    if (disabled || !anchorCellRef.current) return;
+
+    const anchor = anchorCellRef.current;
+    const m = metricsRef.current;
+    const { locationX, locationY } = nativeEvent;
+
+    if (!lockedDirectionRef.current) {
+      const stride = m.cellSize + m.gap;
+      const anchorLocX = m.horizontalPadding + anchor.col * stride + m.cellSize / 2;
+      const anchorLocY = m.horizontalPadding + anchor.row * stride + m.cellSize / 2;
+      const dx = locationX - anchorLocX;
+      const dy = locationY - anchorLocY;
+
+      if (Math.hypot(dx, dy) < stride * 0.6) return; // zona morta
+
+      lockedDirectionRef.current = quantizeDirection(dx, dy, includeDiagonal);
+    }
+
+    if (!lockedDirectionRef.current) return;
+
+    const snappedCell = getSnappedEndCell(
+      locationX,
+      locationY,
+      anchor,
+      lockedDirectionRef.current,
+      grid,
+      m
     );
-    if (cell) callback(cell);
+
+    const isAtAnchor = snappedCell.row === anchor.row && snappedCell.col === anchor.col;
+    if (isAtAnchor) {
+      animOpacity.setValue(0);
+    } else {
+      updateActiveLine(anchor, snappedCell);
+    }
+
+    callback(snappedCell);
+  }
+
+  function handleRelease(event) {
+    animOpacity.setValue(0);
+    anchorCellRef.current = null;
+    lockedDirectionRef.current = null;
+    onSelectionEnd?.(event);
   }
 
   const foundLineThickness = Math.max(16, Math.floor(metrics.cellSize * 0.68));
   const activeLineThickness = Math.max(18, Math.floor(metrics.cellSize * 0.78));
-  const activeSelectionStyle =
-    selectedCells.length > 1 && !selectionInvalid
-      ? buildHighlightStyle(selectedCells, metrics, activeLineThickness)
-      : null;
 
   return (
     <View style={styles.wrapper}>
       <View
-        ref={gridRef}
         style={[
           styles.gridFrame,
           {
@@ -159,7 +264,6 @@ export default function WordSearchGrid({
             gap: metrics.gap,
           },
         ]}
-        onLayout={handleLayout}
         onStartShouldSetResponder={() => !disabled}
         onMoveShouldSetResponder={() => !disabled}
         onResponderGrant={({ nativeEvent }) =>
@@ -168,9 +272,11 @@ export default function WordSearchGrid({
         onResponderMove={({ nativeEvent }) =>
           handleTouchMove(nativeEvent, onSelectionMove)
         }
-        onResponderRelease={onSelectionEnd}
-        onResponderTerminate={onSelectionEnd}
+        onResponderRelease={handleRelease}
+        onResponderTerminate={handleRelease}
       >
+        {/* pointerEvents="none" garante que locationX/Y das views filhas não
+            interceptem o toque — o gridFrame sempre é o alvo do toque */}
         <View pointerEvents="none" style={StyleSheet.absoluteFill}>
           {foundPlacements.map((placement) => {
             const lineStyle = buildHighlightStyle(
@@ -178,51 +284,58 @@ export default function WordSearchGrid({
               metrics,
               foundLineThickness
             );
-
-            if (!lineStyle) {
-              return null;
-            }
-
+            if (!lineStyle) return null;
             return (
               <View
                 key={`found-line-${placement.word}`}
                 style={[
                   styles.highlightLine,
                   lineStyle,
-                  {
-                    backgroundColor:
-                      placement.color?.soft || palette.foundSoft,
-                  },
+                  { backgroundColor: placement.color?.soft || palette.foundSoft },
                 ]}
               />
             );
           })}
-          {activeSelectionStyle ? (
-            <View
-              style={[
-                styles.highlightLine,
-                styles.activeSelectionLine,
-                activeSelectionStyle,
-              ]}
-            />
-          ) : null}
+          <Animated.View
+            style={[
+              styles.highlightLine,
+              styles.activeSelectionLine,
+              {
+                width: BASE_LINE_WIDTH,
+                height: activeLineThickness,
+                borderRadius: activeLineThickness / 2,
+                opacity: animOpacity,
+                transform: [
+                  { translateX: animTX },
+                  { translateY: animTY },
+                  {
+                    rotateZ: animAngle.interpolate({
+                      inputRange: [-Math.PI, Math.PI],
+                      outputRange: ['-3.14159rad', '3.14159rad'],
+                    }),
+                  },
+                  { scaleX: animScale },
+                ],
+              },
+            ]}
+          />
         </View>
         {grid.map((row, rowIndex) => (
-          <View key={`row-${rowIndex}`} style={[styles.row, { gap: metrics.gap }]}>
+          <View
+            key={`row-${rowIndex}`}
+            pointerEvents="none"
+            style={[styles.row, { gap: metrics.gap }]}
+          >
             {row.map((cell) => (
               <View
                 key={`${cell.row}-${cell.col}`}
+                pointerEvents="none"
                 style={[
                   styles.cell,
                   { width: metrics.cellSize, height: metrics.cellSize },
                 ]}
               >
-                <Text
-                  style={[
-                    styles.cellLetter,
-                    { fontSize: metrics.letterSize },
-                  ]}
-                >
+                <Text style={[styles.cellLetter, { fontSize: metrics.letterSize }]}>
                   {cell.letter}
                 </Text>
               </View>
@@ -233,6 +346,18 @@ export default function WordSearchGrid({
     </View>
   );
 }
+
+export default memo(WordSearchGrid, (prev, next) => {
+  return (
+    prev.grid === next.grid &&
+    prev.foundPlacements === next.foundPlacements &&
+    prev.disabled === next.disabled &&
+    prev.includeDiagonal === next.includeDiagonal &&
+    prev.onSelectionStart === next.onSelectionStart &&
+    prev.onSelectionMove === next.onSelectionMove &&
+    prev.onSelectionEnd === next.onSelectionEnd
+  );
+});
 
 const styles = StyleSheet.create({
   wrapper: {
