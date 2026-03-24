@@ -1,15 +1,21 @@
-import { ImageBackground, StyleSheet, View } from 'react-native';
 import { useMemo, useState } from 'react';
+import { ImageBackground, StyleSheet, View } from 'react-native';
 
 import images from '../assets/images.js';
+import GameModeSelector from '../components/GameModeSelector.js';
 import VerseCard from '../components/VerseCard.js';
 import WordSearchGrid from '../components/WordSearchGrid.js';
+import {
+  DEFAULT_VERSE_HUNT_MODE_ID,
+  getVerseHuntModeConfig,
+  verseHuntModes,
+} from '../constants/verseHuntModes.js';
 import { useVerseHuntGame } from '../hooks/useVerseHuntGame.js';
 import { getInitialVerse, getRandomVerse } from '../services/verseSource.js';
 
 function pickImage(verseId) {
   let hash = 0;
-  for (let i = 0; i < verseId.length; i++) {
+  for (let i = 0; i < verseId.length; i += 1) {
     hash = (hash * 31 + verseId.charCodeAt(i)) >>> 0;
   }
   return images[hash % images.length];
@@ -17,7 +23,17 @@ function pickImage(verseId) {
 
 export default function VerseHuntScreen() {
   const [currentVerse, setCurrentVerse] = useState(() => getInitialVerse());
-  const backgroundImage = useMemo(() => pickImage(currentVerse.id), [currentVerse.id]);
+  const [selectedModeId, setSelectedModeId] = useState(
+    DEFAULT_VERSE_HUNT_MODE_ID
+  );
+  const backgroundImage = useMemo(
+    () => pickImage(currentVerse.id),
+    [currentVerse.id]
+  );
+  const selectedMode = useMemo(
+    () => getVerseHuntModeConfig(selectedModeId),
+    [selectedModeId]
+  );
 
   const {
     verse,
@@ -30,14 +46,7 @@ export default function VerseHuntScreen() {
     handleSelectionStart,
     handleSelectionMove,
     handleSelectionEnd,
-  } = useVerseHuntGame(currentVerse, {
-    gridSize: 8,
-    minGridSize: 8,
-    maxGridSize: 8,
-    targetWordCount: 5,
-    maxWordLength: 7,
-    includeDiagonal: false,
-  });
+  } = useVerseHuntGame(currentVerse, selectedMode.gameOptions);
 
   function handleNextVerse() {
     setCurrentVerse((current) => getRandomVerse(current.id));
@@ -57,7 +66,11 @@ export default function VerseHuntScreen() {
         onNextVerse={handleNextVerse}
         isComplete={isComplete}
       />
-
+      <GameModeSelector
+        modes={verseHuntModes}
+        selectedModeId={selectedMode.id}
+        onSelectMode={setSelectedModeId}
+      />
       <WordSearchGrid
         grid={grid}
         selectedCellMap={selectedCellMap}

@@ -7,34 +7,134 @@ import { processVerseForHunt } from '../utils/verseProcessing.js';
 import { buildCellMap, findMatchedPlacement } from '../utils/validation.js';
 import { generateWordSearchGrid, getCellKey } from '../utils/wordSearch.js';
 
-function createGameState(verse, options) {
-  const processedVerse = processVerseForHunt(verse, options);
-  const gridState = generateWordSearchGrid(processedVerse.targetWords, {
-    size: options.gridSize,
-    minSize: options.minGridSize ?? options.gridSize ?? 8,
-    maxSize: options.maxGridSize ?? 10,
+function getOptionsKey(options = {}) {
+  return [
+    options.rows ?? '',
+    options.cols ?? '',
+    options.gridSize ?? '',
+    options.targetWordCount ?? '',
+    options.minTargetWordCount ?? '',
+    options.maxTargetWordCount ?? '',
+    options.minWordLength ?? '',
+    options.minFallbackWordLength ?? '',
+    options.maxWordLength ?? '',
+    options.includeDiagonal ? '1' : '0',
+    options.allowBackwards ? '1' : '0',
+  ].join('|');
+}
+
+function createGridState(targetWords, options) {
+  return generateWordSearchGrid(targetWords, {
+    rows: options.rows,
+    cols: options.cols,
+    gridSize: options.gridSize,
     includeDiagonal: options.includeDiagonal ?? false,
+    allowBackwards: options.allowBackwards ?? false,
+    maxAttempts: options.maxAttempts,
   });
-  const wordStyleMap = processedVerse.targetWords.reduce((map, word, index) => {
-    map[word.normalized] = wordHighlights[index % wordHighlights.length];
-    return map;
-  }, {});
-  const placements = gridState.placements.map((placement) => ({
-    ...placement,
-    color: wordStyleMap[placement.word],
-  }));
+}
+
+function resolveRequestedWordRange(verse, options = {}) {
+  const requestedMax =
+    options.maxTargetWordCount ??
+    options.targetWordCount ??
+    verse.targetWordCount ??
+    3;
+  const requestedMin =
+    options.minTargetWordCount ??
+    options.targetWordCount ??
+    requestedMax;
 
   return {
-    verse: processedVerse,
-    gridState: {
-      ...gridState,
-      placements,
-    },
-    wordStyleMap,
+    min: Math.min(requestedMin, requestedMax),
+    max: Math.max(requestedMin, requestedMax),
   };
 }
 
+function createGameState(verse, options) {
+  const requestedWordRange = resolveRequestedWordRange(verse, options);
+  const initialVerseState = processVerseForHunt(verse, options);
+  const maxAvailableCount = initialVerseState.targetWords.length;
+  const preferredMinimumCount = Math.min(maxAvailableCount, requestedWordRange.min);
+  let lastError = null;
+
+  for (let wordCount = maxAvailableCount; wordCount >= preferredMinimumCount; wordCount -= 1) {
+    const gameOptions =
+      wordCount === maxAvailableCount
+        ? options
+        : {
+            ...options,
+            targetWordCount: wordCount,
+            minTargetWordCount: wordCount,
+            maxTargetWordCount: wordCount,
+          };
+    const processedVerse =
+      wordCount === maxAvailableCount
+        ? initialVerseState
+        : processVerseForHunt(verse, gameOptions);
+
+    try {
+      const gridState = createGridState(processedVerse.targetWords, gameOptions);
+      const wordStyleMap = processedVerse.targetWords.reduce((map, word, index) => {
+        map[word.normalized] = wordHighlights[index % wordHighlights.length];
+        return map;
+      }, {});
+      const placements = gridState.placements.map((placement) => ({
+        ...placement,
+        color: wordStyleMap[placement.word],
+      }));
+
+      return {
+        verse: processedVerse,
+        gridState: {
+          ...gridState,
+          placements,
+        },
+        wordStyleMap,
+      };
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  for (let wordCount = preferredMinimumCount - 1; wordCount >= 1; wordCount -= 1) {
+    const fallbackOptions = {
+      ...options,
+      targetWordCount: wordCount,
+      minTargetWordCount: wordCount,
+      maxTargetWordCount: wordCount,
+    };
+    const processedVerse = processVerseForHunt(verse, fallbackOptions);
+
+    try {
+      const gridState = createGridState(processedVerse.targetWords, fallbackOptions);
+      const wordStyleMap = processedVerse.targetWords.reduce((map, word, index) => {
+        map[word.normalized] = wordHighlights[index % wordHighlights.length];
+        return map;
+      }, {});
+      const placements = gridState.placements.map((placement) => ({
+        ...placement,
+        color: wordStyleMap[placement.word],
+      }));
+
+      return {
+        verse: processedVerse,
+        gridState: {
+          ...gridState,
+          placements,
+        },
+        wordStyleMap,
+      };
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError ?? new Error('Nao foi possivel iniciar o jogo.');
+}
+
 export function useVerseHuntGame(verse, options = {}) {
+  const optionsKey = getOptionsKey(options);
   const [setup, setSetup] = useState(() => createGameState(verse, options));
   const [selectedCells, setSelectedCells] = useState([]);
   const [selectionInvalid, setSelectionInvalid] = useState(false);
@@ -62,8 +162,9 @@ export function useVerseHuntGame(verse, options = {}) {
     setSetup(createGameState(verse, options));
     updateSelectedCells([]);
     setFoundPlacements([]);
+    setSelectionInvalid(false);
     selectionAnchorRef.current = null;
-  }, [verse.id, verse.reference, verse.text, options.gridSize, options.includeDiagonal]);
+  }, [verse.id, verse.reference, verse.text, optionsKey]);
 
   useEffect(() => {
     if (!isComplete) {

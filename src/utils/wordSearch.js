@@ -1,11 +1,16 @@
-const DIRECTIONS = [
+const STRAIGHT_DIRECTIONS = [
   { rowStep: 0, colStep: 1 },
   { rowStep: 1, colStep: 0 },
 ];
 
-function createEmptyGrid(size) {
-  return Array.from({ length: size }, (_, row) =>
-    Array.from({ length: size }, (_, col) => ({
+const DIAGONAL_DIRECTIONS = [
+  { rowStep: 1, colStep: 1 },
+  { rowStep: 1, colStep: -1 },
+];
+
+function createEmptyGrid(rows, cols) {
+  return Array.from({ length: rows }, (_, row) =>
+    Array.from({ length: cols }, (_, col) => ({
       row,
       col,
       letter: '',
@@ -44,25 +49,29 @@ function shuffle(array) {
   return array;
 }
 
-function placeWord(grid, word, preferredDirections = DIRECTIONS) {
-  // Gera e embaralha posições para cada direção separadamente,
-  // depois intercala para garantir que ambas as direções sejam tentadas uniformemente.
+function placeWord(grid, word, preferredDirections) {
+  const rowCount = grid.length;
+  const colCount = grid[0]?.length ?? 0;
+
+  // Gera e embaralha posicoes para cada direcao separadamente,
+  // depois intercala as tentativas para distribuir melhor os encaixes.
   const byDirection = preferredDirections.map((direction) => {
     const positions = [];
-    for (let row = 0; row < grid.length; row += 1) {
-      for (let col = 0; col < grid.length; col += 1) {
+    for (let row = 0; row < rowCount; row += 1) {
+      for (let col = 0; col < colCount; col += 1) {
         positions.push({ row, col, direction });
       }
     }
     return shuffle(positions);
   });
 
-  // Intercala: tenta uma posição de cada direção por vez
-  const maxLen = Math.max(...byDirection.map((a) => a.length));
+  const maxLen = Math.max(...byDirection.map((positions) => positions.length));
   const attempts = [];
   for (let i = 0; i < maxLen; i += 1) {
     byDirection.forEach((positions) => {
-      if (positions[i]) attempts.push(positions[i]);
+      if (positions[i]) {
+        attempts.push(positions[i]);
+      }
     });
   }
 
@@ -100,27 +109,81 @@ function fillEmptyCells(grid) {
   });
 }
 
-export function getCellKey(cell) {
-  return `${cell.row}-${cell.col}`;
+function buildDirections(options = {}) {
+  const directions = [...STRAIGHT_DIRECTIONS];
+
+  if (options.includeDiagonal) {
+    directions.push(...DIAGONAL_DIRECTIONS);
+  }
+
+  if (options.allowBackwards) {
+    directions.push(
+      ...directions.map((direction) => ({
+        rowStep: -direction.rowStep,
+        colStep: -direction.colStep,
+      }))
+    );
+  }
+
+  return directions.filter((direction, index, list) => {
+    return (
+      list.findIndex(
+        (candidate) =>
+          candidate.rowStep === direction.rowStep &&
+          candidate.colStep === direction.colStep
+      ) === index
+    );
+  });
 }
 
-export function generateWordSearchGrid(targetWords, options = {}) {
-  const size = options.size ?? 6;
-  const grid = createEmptyGrid(size);
+function rotateDirections(directions, offset) {
+  const startIndex = offset % directions.length;
+  return [
+    ...directions.slice(startIndex),
+    ...directions.slice(0, startIndex),
+  ];
+}
+
+function resolveRowCount(options = {}) {
+  return (
+    options.rows ??
+    options.rowCount ??
+    options.height ??
+    options.size ??
+    options.gridSize ??
+    options.maxRows ??
+    options.maxSize ??
+    6
+  );
+}
+
+function resolveColCount(options = {}) {
+  return (
+    options.cols ??
+    options.colCount ??
+    options.width ??
+    options.size ??
+    options.gridSize ??
+    options.maxCols ??
+    options.maxSize ??
+    resolveRowCount(options)
+  );
+}
+
+function buildGridState(targetWords, options = {}) {
+  const rows = resolveRowCount(options);
+  const cols = resolveColCount(options);
+  const grid = createEmptyGrid(rows, cols);
+  const directions = buildDirections(options);
   const sortedWords = [...targetWords]
     .map((word) => word.normalized)
     .sort((left, right) => right.length - left.length);
 
   const placements = sortedWords.map((word, index) => {
-    // Alterna a direção preferida: índices pares começam com horizontal, ímpares com vertical
-    const directions = index % 2 === 0
-      ? [{ rowStep: 0, colStep: 1 }, { rowStep: 1, colStep: 0 }]
-      : [{ rowStep: 1, colStep: 0 }, { rowStep: 0, colStep: 1 }];
-
-    const placement = placeWord(grid, word, directions);
+    const placement = placeWord(grid, word, rotateDirections(directions, index));
 
     if (!placement) {
-      throw new Error('Nao foi possivel gerar a grade do caça-versiculo.');
+      throw new Error('Nao foi possivel gerar a grade do caca-versiculo.');
     }
 
     return placement;
@@ -129,8 +192,28 @@ export function generateWordSearchGrid(targetWords, options = {}) {
   fillEmptyCells(grid);
 
   return {
-    size,
+    rows,
+    cols,
     grid,
     placements,
   };
+}
+
+export function getCellKey(cell) {
+  return `${cell.row}-${cell.col}`;
+}
+
+export function generateWordSearchGrid(targetWords, options = {}) {
+  const maxAttempts = options.maxAttempts ?? 1500;
+  let lastError = null;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    try {
+      return buildGridState(targetWords, options);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError ?? new Error('Nao foi possivel gerar a grade do caca-versiculo.');
 }

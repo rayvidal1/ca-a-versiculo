@@ -3,17 +3,18 @@ import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
 import { palette } from '../theme/palette.js';
 
-function resolveGridMetrics(width, size) {
-  const horizontalPadding = size >= 10 ? 12 : 14;
-  const gap = size >= 9 ? 4 : 5;
+function resolveGridMetrics(width, rowCount, colCount) {
+  const largerSide = Math.max(rowCount, colCount);
+  const horizontalPadding = largerSide >= 11 ? 10 : 14;
+  const gap = largerSide >= 9 ? 4 : 5;
   const usableWidth = Math.min(width - 36, 420) - horizontalPadding * 2;
-  const cellSize = Math.floor((usableWidth - gap * (size - 1)) / size);
+  const cellSize = Math.floor((usableWidth - gap * (colCount - 1)) / colCount);
 
   return {
     cellSize,
     gap,
     horizontalPadding,
-    letterSize: Math.max(12, Math.floor(cellSize * 0.42)),
+    letterSize: Math.max(11, Math.floor(cellSize * 0.42)),
   };
 }
 
@@ -28,8 +29,9 @@ export default function WordSearchGrid({
   disabled,
 }) {
   const { width } = useWindowDimensions();
-  const size = grid.length;
-  const metrics = resolveGridMetrics(width, size);
+  const rowCount = grid.length;
+  const colCount = grid[0]?.length ?? 0;
+  const metrics = resolveGridMetrics(width, rowCount, colCount);
   const gridRef = useRef(null);
   const gridOriginRef = useRef({ x: 0, y: 0 });
 
@@ -39,12 +41,13 @@ export default function WordSearchGrid({
     });
   }, []);
 
-  // Re-mede sempre que o grid mudar (novo versículo) — aguarda o VerseCard
-  // terminar de renderizar antes de capturar a posição final da grade
   useEffect(() => {
     const t1 = setTimeout(measureOrigin, 100);
     const t2 = setTimeout(measureOrigin, 400);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
   }, [grid, measureOrigin]);
 
   function handleLayout() {
@@ -55,8 +58,8 @@ export default function WordSearchGrid({
     const relativeX = pageX - gridOriginRef.current.x - metrics.horizontalPadding;
     const relativeY = pageY - gridOriginRef.current.y - metrics.horizontalPadding;
 
-    const boardWidth = metrics.cellSize * size + metrics.gap * (size - 1);
-    const boardHeight = boardWidth;
+    const boardWidth = metrics.cellSize * colCount + metrics.gap * (colCount - 1);
+    const boardHeight = metrics.cellSize * rowCount + metrics.gap * (rowCount - 1);
 
     if (
       relativeX < 0 ||
@@ -71,7 +74,7 @@ export default function WordSearchGrid({
     const col = Math.floor(relativeX / stride);
     const row = Math.floor(relativeY / stride);
 
-    if (row < 0 || row >= size || col < 0 || col >= size) {
+    if (row < 0 || row >= rowCount || col < 0 || col >= colCount) {
       return null;
     }
 
@@ -97,73 +100,75 @@ export default function WordSearchGrid({
     }
   }
 
-  const gridContent = (
-    <View
-      ref={gridRef}
-      style={[
-        styles.gridFrame,
-        {
-          padding: metrics.horizontalPadding,
-          gap: metrics.gap,
-        },
-      ]}
-      onLayout={handleLayout}
-      onStartShouldSetResponder={() => !disabled}
-      onMoveShouldSetResponder={() => !disabled}
-      onResponderGrant={({ nativeEvent }) =>
-        handleTouch(nativeEvent, onSelectionStart)
-      }
-      onResponderMove={({ nativeEvent }) =>
-        handleTouch(nativeEvent, onSelectionMove)
-      }
-      onResponderRelease={onSelectionEnd}
-      onResponderTerminate={onSelectionEnd}
-    >
-      {grid.map((row, rowIndex) => (
-        <View key={`row-${rowIndex}`} style={[styles.row, { gap: metrics.gap }]}>
-          {row.map((cell) => {
-            const cellKey = `${cell.row}-${cell.col}`;
-            const foundState = foundCellMap[cellKey];
-            const isFound = Boolean(foundState);
-            const isSelected = Boolean(selectedCellMap[cellKey]);
-
-            return (
-              <View
-                key={cellKey}
-                style={[
-                  styles.cell,
-                  { width: metrics.cellSize, height: metrics.cellSize },
-                  isFound && [
-                    styles.cellFound,
-                    {
-                      backgroundColor: foundState.color?.fill || palette.found,
-                      borderColor: foundState.color?.border || palette.found,
-                    },
-                  ],
-                  !isFound && isSelected && (selectionInvalid ? styles.cellInvalid : styles.cellSelected),
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.cellLetter,
-                    { fontSize: metrics.letterSize },
-                    isFound && styles.cellLetterFound,
-                    !isFound && isSelected && (selectionInvalid ? styles.cellLetterInvalid : styles.cellLetterSelected),
-                  ]}
-                >
-                  {cell.letter}
-                </Text>
-              </View>
-            );
-          })}
-        </View>
-      ))}
-    </View>
-  );
-
   return (
     <View style={styles.wrapper}>
-      {gridContent}
+      <View
+        ref={gridRef}
+        style={[
+          styles.gridFrame,
+          {
+            padding: metrics.horizontalPadding,
+            gap: metrics.gap,
+          },
+        ]}
+        onLayout={handleLayout}
+        onStartShouldSetResponder={() => !disabled}
+        onMoveShouldSetResponder={() => !disabled}
+        onResponderGrant={({ nativeEvent }) =>
+          handleTouch(nativeEvent, onSelectionStart)
+        }
+        onResponderMove={({ nativeEvent }) =>
+          handleTouch(nativeEvent, onSelectionMove)
+        }
+        onResponderRelease={onSelectionEnd}
+        onResponderTerminate={onSelectionEnd}
+      >
+        {grid.map((row, rowIndex) => (
+          <View key={`row-${rowIndex}`} style={[styles.row, { gap: metrics.gap }]}>
+            {row.map((cell) => {
+              const cellKey = `${cell.row}-${cell.col}`;
+              const foundState = foundCellMap[cellKey];
+              const isFound = Boolean(foundState);
+              const isSelected = Boolean(selectedCellMap[cellKey]);
+
+              return (
+                <View
+                  key={cellKey}
+                  style={[
+                    styles.cell,
+                    { width: metrics.cellSize, height: metrics.cellSize },
+                    isFound && [
+                      styles.cellFound,
+                      {
+                        backgroundColor: foundState.color?.fill || palette.found,
+                        borderColor: foundState.color?.border || palette.found,
+                      },
+                    ],
+                    !isFound &&
+                      isSelected &&
+                      (selectionInvalid ? styles.cellInvalid : styles.cellSelected),
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.cellLetter,
+                      { fontSize: metrics.letterSize },
+                      isFound && styles.cellLetterFound,
+                      !isFound &&
+                        isSelected &&
+                        (selectionInvalid
+                          ? styles.cellLetterInvalid
+                          : styles.cellLetterSelected),
+                    ]}
+                  >
+                    {cell.letter}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
+        ))}
+      </View>
     </View>
   );
 }
