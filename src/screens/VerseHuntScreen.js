@@ -5,6 +5,7 @@ import ConfettiCannon from 'react-native-confetti-cannon';
 
 import images from '../assets/images.js';
 import GameModeSelector from '../components/GameModeSelector.js';
+import PhraseToast from '../components/PhraseToast.js';
 import ProgressBar from '../components/ProgressBar.js';
 import VerseCard from '../components/VerseCard.js';
 import WordSearchGrid from '../components/WordSearchGrid.js';
@@ -28,11 +29,28 @@ function pickImage(verseId) {
 
 const CONFETTI_COLORS = ['#059669', '#D97706', '#7C3AED', '#DB2777', '#0284C7', '#F6F1E7', '#FFFFFF'];
 
+const MID_PHRASES = [
+  'Tá forte! 💪', 'Que isso! 🔥', 'Aí sim! 😎', 'Brabo demais! 💥',
+  'Tá afiado! 🎯', 'Top demais! 🚀', 'Foi rápido! ⚡', 'Passou voando! ⏱️',
+  'Deus é bom! 💛', 'Deus é fiel! 💙',
+];
+const END_PHRASES = [
+  'Hô glória! 🙌', 'Que benção! ✨', 'Aleluia! 🔥', 'Glória a Deus! 🙏',
+  'Só vitória! 🏆', 'Amém! 🙌', 'Que maravilha! 🌟', 'Vitória! 🔥',
+  'Foi lindo! 😄', 'Mandou bem! 👏',
+];
+
+function pickRandom(list) {
+  return list[Math.floor(Math.random() * list.length)];
+}
+
 export default function VerseHuntScreen() {
   const { width } = useWindowDimensions();
   const confettiRef = useRef(null);
   const boardRef = useRef(null);
   const verseCardRef = useRef(null);
+  const midpointShownRef = useRef(false);
+  const [activePhrase, setActivePhrase] = useState(null);
   const playVictory = useVictorySound();
   const playGameStart = useSoundEffect(require('../assets/sounds/game-start.wav'));
 
@@ -78,12 +96,29 @@ export default function VerseHuntScreen() {
     handleSelectionEnd,
   } = useVerseHuntGame(currentVerse, selectedMode.gameOptions);
 
+  // Reseta o midpoint ao trocar de versículo
+  useEffect(() => {
+    midpointShownRef.current = false;
+  }, [currentVerse.id]);
+
+  // Frase na metade do desafio
+  useEffect(() => {
+    if (isComplete || midpointShownRef.current) return;
+    const mid = Math.ceil(placements.length / 2);
+    if (placements.length > 1 && foundPlacements.length === mid) {
+      midpointShownRef.current = true;
+      setActivePhrase(pickRandom(MID_PHRASES));
+    }
+  }, [foundPlacements.length]);
+
+  // Celebração ao completar
   useEffect(() => {
     if (isComplete) {
       confettiRef.current?.start();
       boardRef.current?.tada(900);
       verseCardRef.current?.bounceIn(600);
       playVictory();
+      setActivePhrase(pickRandom(END_PHRASES));
     }
   }, [isComplete]);
 
@@ -147,6 +182,13 @@ export default function VerseHuntScreen() {
           <Text style={styles.hideButtonIcon}>{cardsHidden ? '◉' : '◎'}</Text>
         </TouchableOpacity>
       </View>
+      {activePhrase && (
+        <PhraseToast
+          key={activePhrase + foundPlacements.length}
+          phrase={activePhrase}
+          onHide={() => setActivePhrase(null)}
+        />
+      )}
       {isComplete && (
         <ConfettiCannon
           ref={confettiRef}
