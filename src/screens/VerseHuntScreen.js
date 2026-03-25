@@ -47,7 +47,6 @@ function pickRandom(list) {
 export default function VerseHuntScreen() {
   const { width } = useWindowDimensions();
   const confettiRef = useRef(null);
-  const boardRef = useRef(null);
   const verseCardRef = useRef(null);
   const midpointShownRef = useRef(false);
   const [activePhrase, setActivePhrase] = useState(null);
@@ -115,7 +114,6 @@ export default function VerseHuntScreen() {
   useEffect(() => {
     if (isComplete) {
       confettiRef.current?.start();
-      boardRef.current?.tada(900);
       verseCardRef.current?.bounceIn(600);
       playVictory();
       setActivePhrase(pickRandom(END_PHRASES));
@@ -150,11 +148,7 @@ export default function VerseHuntScreen() {
         </Animatable.View>
         <ProgressBar found={foundPlacements.length} total={placements.length} />
         <View style={styles.boardArea}>
-          <Animatable.View
-            ref={boardRef}
-            useNativeDriver
-            style={[styles.boardCard, cardsHidden && styles.boardCardHidden]}
-          >
+          <View style={[styles.boardCard, cardsHidden && styles.boardCardHidden]}>
             <GameModeSelector
               modes={verseHuntModes}
               selectedModeId={selectedMode.id}
@@ -170,7 +164,7 @@ export default function VerseHuntScreen() {
               onSelectionEnd={handleSelectionEnd}
               disabled={isComplete}
             />
-          </Animatable.View>
+          </View>
         </View>
       </View>
       <View style={styles.hideButtonContainer}>
