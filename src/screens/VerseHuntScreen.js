@@ -30,9 +30,11 @@ function pickImage(verseId) {
 const CONFETTI_COLORS = ['#059669', '#D97706', '#7C3AED', '#DB2777', '#0284C7', '#F6F1E7', '#FFFFFF'];
 
 const MID_PHRASES = [
-  'Tá forte! 💪', 'Que isso! 🔥', 'Aí sim! 😎', 'Brabo demais! 💥',
-  'Tá afiado! 🎯', 'Top demais! 🚀', 'Foi rápido! ⚡', 'Passou voando! ⏱️',
-  'Deus é bom! 💛', 'Deus é fiel! 💙',
+  'Muito bom! 👏', 'Uau! 😮🔥', 'Tá mandando bem! 💪', 'Mandou bem demais! 🚀',
+  'Arrasou! ✨', 'Que isso! 🔥', 'Brabo! 💥', 'Sensacional! 😄',
+  'Show! 🎯', 'Excelente! 🌟', 'Top! 🚀', 'Boa demais! 👏',
+  'Que jogada! 🔥', 'Tá voando! ✈️', 'Aí sim! 😎', 'Muito top! 💥',
+  'Tá afiado! 🎯', 'Que nível! 🔥', 'Perfeito! ✨', 'Que aula! 👏',
 ];
 const END_PHRASES = [
   'Hô glória! 🙌', 'Que benção! ✨', 'Aleluia! 🔥', 'Glória a Deus! 🙏',
