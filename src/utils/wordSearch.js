@@ -441,8 +441,8 @@ function buildGridState(targetWords, options = {}) {
   }
 
   const sortedWords = [...targetWords]
-    .map((word) => word.normalized)
-    .sort((left, right) => right.length - left.length);
+    .map((word) => ({ normalized: word.normalized, letters: word.letters ?? word.normalized }))
+    .sort((left, right) => right.letters.length - left.letters.length);
   const quotaMap = buildDirectionQuotaMap(sortedWords.length, directionDistribution);
   const usageMap = buildDirectionUsageMap(directionDistribution);
   const distributionMap = getDistributionMap(directionDistribution);
@@ -457,12 +457,15 @@ function buildGridState(targetWords, options = {}) {
   };
 
   for (const word of sortedWords) {
-    const placement = placeWordWithDistribution(grid, word, directionContext);
+    // Usa a versão acentuada para as letras na grade
+    const placement = placeWordWithDistribution(grid, word.letters, directionContext);
 
     if (!placement) {
       throw new Error('Nao foi possivel gerar a grade do caca-versiculo.');
     }
 
+    // Mantém normalized como ID (usado em wordStyleMap, foundWordSet, etc.)
+    placement.word = word.normalized;
     usageMap[placement.directionId] = (usageMap[placement.directionId] ?? 0) + 1;
     placements.push(placement);
   }

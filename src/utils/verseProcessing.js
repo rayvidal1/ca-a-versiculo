@@ -1,4 +1,4 @@
-import { tokenizeVerse } from './text.js';
+import { accentedUpperCase, tokenizeVerse } from './text.js';
 
 const STOP_WORDS = new Set([
   'A',
@@ -121,6 +121,7 @@ export function selectTargetWords(text, options = {}) {
     .map((token) => ({
       id: token.normalized,
       normalized: token.normalized,
+      letters: accentedUpperCase(token.text),
       label: token.text,
       display: token.normalized,
     }));

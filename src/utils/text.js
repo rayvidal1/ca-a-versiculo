@@ -6,6 +6,13 @@ export function normalizeWord(value = '') {
     .toUpperCase();
 }
 
+// Versão maiúscula preservando acentos (para exibição na grade)
+export function accentedUpperCase(value = '') {
+  return value
+    .replace(/[^A-Za-zÀ-ÿ]/g, '')
+    .toUpperCase();
+}
+
 export function tokenizeVerse(text = '') {
   const parts = text.match(/[A-Za-zÀ-ÿ]+|[^A-Za-zÀ-ÿ]+/g) ?? [];
 
