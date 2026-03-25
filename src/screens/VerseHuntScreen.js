@@ -76,15 +76,14 @@ export default function VerseHuntScreen() {
     >
       <View style={styles.overlay} />
       <View style={styles.content}>
-        <View style={cardsHidden ? styles.hidden : null}>
-          <VerseCard
-            reference={verse.reference}
-            tokens={verse.tokens}
-            foundWordSet={foundWordSet}
-            onNextVerse={handleNextVerse}
-            isComplete={isComplete}
-          />
-        </View>
+        <VerseCard
+          reference={verse.reference}
+          tokens={verse.tokens}
+          foundWordSet={foundWordSet}
+          onNextVerse={handleNextVerse}
+          isComplete={isComplete}
+          hideBackground={cardsHidden}
+        />
         <View style={styles.boardArea}>
           <View style={[styles.boardCard, cardsHidden && styles.boardCardHidden]}>
             <GameModeSelector
@@ -142,9 +141,6 @@ const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.35)',
-  },
-  hidden: {
-    opacity: 0,
   },
   boardCardHidden: {
     backgroundColor: 'transparent',

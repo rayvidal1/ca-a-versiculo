@@ -7,13 +7,14 @@ export default function VerseCard({
   tokens,
   foundWordSet,
   isComplete,
+  hideBackground,
   onNextVerse,
 }) {
   return (
-    <View style={styles.cardShell}>
-      <View style={styles.card}>
+    <View style={[styles.cardShell, hideBackground && styles.cardShellHidden]}>
+      <View style={[styles.card, hideBackground && styles.cardHidden]}>
         <View style={styles.glassGlow} pointerEvents="none" />
-        <View style={[styles.cardTint, isComplete && styles.cardTintComplete]}>
+        <View style={[styles.cardTint, isComplete && styles.cardTintComplete, hideBackground && styles.cardTintHidden]}>
           <View style={styles.header}>
             <Text style={styles.reference}>{reference}</Text>
             <Pressable style={styles.actionButton} onPress={onNextVerse}>
@@ -66,11 +67,23 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(255,255,255,0.08)',
   },
+  cardShellHidden: {
+    backgroundColor: 'transparent',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  cardHidden: {
+    backgroundColor: 'transparent',
+  },
   cardTint: {
     padding: 18,
     backgroundColor: 'rgba(255,255,255,0.42)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.32)',
+  },
+  cardTintHidden: {
+    backgroundColor: 'transparent',
+    borderColor: 'transparent',
   },
   cardTintComplete: {
     backgroundColor: 'rgba(224,243,232,0.4)',
