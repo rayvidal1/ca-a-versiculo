@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ImageBackground, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import * as Animatable from 'react-native-animatable';
+import ConfettiCannon from 'react-native-confetti-cannon';
 
 import images from '../assets/images.js';
 import GameModeSelector from '../components/GameModeSelector.js';
@@ -22,7 +24,14 @@ function pickImage(verseId) {
   return images[hash % images.length];
 }
 
+const CONFETTI_COLORS = ['#059669', '#D97706', '#7C3AED', '#DB2777', '#0284C7', '#F6F1E7', '#FFFFFF'];
+
 export default function VerseHuntScreen() {
+  const { width } = useWindowDimensions();
+  const confettiRef = useRef(null);
+  const boardRef = useRef(null);
+  const verseCardRef = useRef(null);
+
   const [selectedModeId, setSelectedModeId] = useState(
     DEFAULT_VERSE_HUNT_MODE_ID
   );
@@ -65,6 +74,14 @@ export default function VerseHuntScreen() {
     handleSelectionEnd,
   } = useVerseHuntGame(currentVerse, selectedMode.gameOptions);
 
+  useEffect(() => {
+    if (isComplete) {
+      confettiRef.current?.start();
+      boardRef.current?.tada(900);
+      verseCardRef.current?.bounceIn(600);
+    }
+  }, [isComplete]);
+
   function handleNextVerse() {
     setCurrentVerse((current) =>
       getRandomVerse(current.id, selectedMode.gameOptions)
@@ -79,18 +96,24 @@ export default function VerseHuntScreen() {
     >
       <View style={styles.overlay} />
       <View style={styles.content}>
-        <VerseCard
-          reference={verse.reference}
-          tokens={verse.tokens}
-          foundWordSet={foundWordSet}
-          lastFoundWord={lastFoundWord}
-          onNextVerse={handleNextVerse}
-          isComplete={isComplete}
-          hideBackground={cardsHidden}
-        />
+        <Animatable.View ref={verseCardRef} useNativeDriver>
+          <VerseCard
+            reference={verse.reference}
+            tokens={verse.tokens}
+            foundWordSet={foundWordSet}
+            lastFoundWord={lastFoundWord}
+            onNextVerse={handleNextVerse}
+            isComplete={isComplete}
+            hideBackground={cardsHidden}
+          />
+        </Animatable.View>
         <ProgressBar found={foundPlacements.length} total={placements.length} />
         <View style={styles.boardArea}>
-          <View style={[styles.boardCard, cardsHidden && styles.boardCardHidden]}>
+          <Animatable.View
+            ref={boardRef}
+            useNativeDriver
+            style={[styles.boardCard, cardsHidden && styles.boardCardHidden]}
+          >
             <GameModeSelector
               modes={verseHuntModes}
               selectedModeId={selectedMode.id}
@@ -106,7 +129,7 @@ export default function VerseHuntScreen() {
               onSelectionEnd={handleSelectionEnd}
               disabled={isComplete}
             />
-          </View>
+          </Animatable.View>
         </View>
       </View>
       <View style={styles.hideButtonContainer}>
@@ -118,6 +141,15 @@ export default function VerseHuntScreen() {
           <Text style={styles.hideButtonIcon}>{cardsHidden ? '◉' : '◎'}</Text>
         </TouchableOpacity>
       </View>
+      <ConfettiCannon
+        ref={confettiRef}
+        count={180}
+        origin={{ x: width / 2, y: -20 }}
+        colors={CONFETTI_COLORS}
+        autoStart={false}
+        fadeOut
+        fallSpeed={3000}
+      />
     </ImageBackground>
   );
 }
