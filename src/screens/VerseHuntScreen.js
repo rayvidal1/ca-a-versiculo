@@ -3,6 +3,7 @@ import { ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react
 
 import images from '../assets/images.js';
 import GameModeSelector from '../components/GameModeSelector.js';
+import ProgressBar from '../components/ProgressBar.js';
 import VerseCard from '../components/VerseCard.js';
 import WordSearchGrid from '../components/WordSearchGrid.js';
 import {
@@ -54,6 +55,7 @@ export default function VerseHuntScreen() {
   const {
     verse,
     grid,
+    placements,
     foundPlacements,
     foundWordSet,
     isComplete,
@@ -84,6 +86,7 @@ export default function VerseHuntScreen() {
           isComplete={isComplete}
           hideBackground={cardsHidden}
         />
+        <ProgressBar found={foundPlacements.length} total={placements.length} />
         <View style={styles.boardArea}>
           <View style={[styles.boardCard, cardsHidden && styles.boardCardHidden]}>
             <GameModeSelector
