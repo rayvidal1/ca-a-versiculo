@@ -86,11 +86,20 @@ function quantizeDirection(dx, dy, includeDiagonal) {
 
   const ratio = adx === 0 ? Infinity : ady / adx;
 
-  if (!includeDiagonal || ratio < 0.4142) {
+  if (ratio < 0.4142) {
+    // Zona horizontal (< 22.5° do eixo X)
     return { stepRow: 0, stepCol: Math.sign(dx) };
   }
   if (ratio > 2.4142) {
+    // Zona vertical (> 67.5° do eixo X)
     return { stepRow: Math.sign(dy), stepCol: 0 };
+  }
+  // Zona diagonal (entre 22.5° e 67.5°)
+  if (!includeDiagonal) {
+    // Sem diagonal: snap para o eixo dominante
+    return adx >= ady
+      ? { stepRow: 0, stepCol: Math.sign(dx) }
+      : { stepRow: Math.sign(dy), stepCol: 0 };
   }
   return { stepRow: Math.sign(dy), stepCol: Math.sign(dx) };
 }
