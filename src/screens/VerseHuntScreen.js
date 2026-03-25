@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ImageBackground, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
-import * as Animatable from 'react-native-animatable';
+import { Animated, ImageBackground, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+
 import ConfettiCannon from 'react-native-confetti-cannon';
 
 import images from '../assets/images.js';
@@ -47,8 +47,10 @@ function pickRandom(list) {
 export default function VerseHuntScreen() {
   const { width } = useWindowDimensions();
   const confettiRef = useRef(null);
-  const verseCardRef = useRef(null);
+
   const midpointShownRef = useRef(false);
+  const borderAnim = useRef(new Animated.Value(0)).current;
+  const borderLoopRef = useRef(null);
   const [activePhrase, setActivePhrase] = useState(null);
   const playVictory = useVictorySound();
   const playGameStart = useSoundEffect(require('../assets/sounds/game-start.wav'));
@@ -95,9 +97,11 @@ export default function VerseHuntScreen() {
     handleSelectionEnd,
   } = useVerseHuntGame(currentVerse, selectedMode.gameOptions);
 
-  // Reseta o midpoint ao trocar de versículo
+  // Reseta ao trocar de versículo
   useEffect(() => {
     midpointShownRef.current = false;
+    borderLoopRef.current?.stop();
+    borderAnim.setValue(0);
   }, [currentVerse.id]);
 
   // Frase na metade do desafio
@@ -114,9 +118,15 @@ export default function VerseHuntScreen() {
   useEffect(() => {
     if (isComplete) {
       confettiRef.current?.start();
-      verseCardRef.current?.bounceIn(600);
       playVictory();
       setActivePhrase(pickRandom(END_PHRASES));
+      borderLoopRef.current = Animated.loop(
+        Animated.sequence([
+          Animated.timing(borderAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
+          Animated.timing(borderAnim, { toValue: 0, duration: 800, useNativeDriver: true }),
+        ])
+      );
+      borderLoopRef.current.start();
     }
   }, [isComplete]);
 
@@ -135,7 +145,19 @@ export default function VerseHuntScreen() {
     >
       <View style={styles.overlay} />
       <View style={styles.content}>
-        <Animatable.View ref={verseCardRef} useNativeDriver>
+        <View style={styles.verseCardWrapper}>
+          {isComplete && (
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                styles.completeBorder,
+                {
+                  opacity: borderAnim.interpolate({ inputRange: [0, 1], outputRange: [0.35, 1] }),
+                  transform: [{ scale: borderAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.025] }) }],
+                },
+              ]}
+            />
+          )}
           <VerseCard
             reference={verse.reference}
             tokens={verse.tokens}
@@ -145,7 +167,7 @@ export default function VerseHuntScreen() {
             isComplete={isComplete}
             hideBackground={cardsHidden}
           />
-        </Animatable.View>
+        </View>
         <ProgressBar found={foundPlacements.length} total={placements.length} />
         <View style={styles.boardArea}>
           <View style={[styles.boardCard, cardsHidden && styles.boardCardHidden]}>
@@ -245,5 +267,18 @@ const styles = StyleSheet.create({
   hideButtonIcon: {
     fontSize: 18,
     color: 'rgba(255,255,255,0.75)',
+  },
+  verseCardWrapper: {
+    position: 'relative',
+  },
+  completeBorder: {
+    position: 'absolute',
+    top: -4,
+    left: -4,
+    right: -4,
+    bottom: -4,
+    borderRadius: 28,
+    borderWidth: 2.5,
+    borderColor: '#D7AA59',
   },
 });
