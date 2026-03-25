@@ -258,12 +258,12 @@ export function useVerseHuntGame(verse, options = {}) {
       includeDiagonal: options.includeDiagonal ?? false,
     });
 
+    // Só atualiza a ref — não chama setState para não disparar re-render
+    // a cada evento de toque (selectedCells/selectionInvalid não são usados na tela)
     if (nextSelection === null) {
-      setSelectionInvalid(true);
-      updateSelectedCells([selectionAnchorRef.current]);
+      selectedCellsRef.current = [selectionAnchorRef.current];
     } else {
-      setSelectionInvalid(false);
-      updateSelectedCells(nextSelection);
+      selectedCellsRef.current = nextSelection;
     }
   }
 

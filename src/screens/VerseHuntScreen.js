@@ -141,15 +141,17 @@ export default function VerseHuntScreen() {
           <Text style={styles.hideButtonIcon}>{cardsHidden ? '◉' : '◎'}</Text>
         </TouchableOpacity>
       </View>
-      <ConfettiCannon
-        ref={confettiRef}
-        count={180}
-        origin={{ x: width / 2, y: -20 }}
-        colors={CONFETTI_COLORS}
-        autoStart={false}
-        fadeOut
-        fallSpeed={3000}
-      />
+      {isComplete && (
+        <ConfettiCannon
+          ref={confettiRef}
+          count={180}
+          origin={{ x: width / 2, y: -20 }}
+          colors={CONFETTI_COLORS}
+          autoStart={false}
+          fadeOut
+          fallSpeed={3000}
+        />
+      )}
     </ImageBackground>
   );
 }
