@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, ImageBackground, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
-
+import * as Animatable from 'react-native-animatable';
 import ConfettiCannon from 'react-native-confetti-cannon';
 
 import images from '../assets/images.js';
@@ -49,6 +49,7 @@ export default function VerseHuntScreen() {
   const confettiRef = useRef(null);
 
   const midpointShownRef = useRef(false);
+  const verseCardRef = useRef(null);
   const borderAnim = useRef(new Animated.Value(0)).current;
   const borderLoopRef = useRef(null);
   const [activePhrase, setActivePhrase] = useState(null);
@@ -118,6 +119,7 @@ export default function VerseHuntScreen() {
   useEffect(() => {
     if (isComplete) {
       confettiRef.current?.start();
+      verseCardRef.current?.bounceIn(600);
       playVictory();
       setActivePhrase(pickRandom(END_PHRASES));
       borderLoopRef.current = Animated.loop(
@@ -158,15 +160,17 @@ export default function VerseHuntScreen() {
               ]}
             />
           )}
-          <VerseCard
-            reference={verse.reference}
-            tokens={verse.tokens}
-            foundWordSet={foundWordSet}
-            lastFoundWord={lastFoundWord}
-            onNextVerse={handleNextVerse}
-            isComplete={isComplete}
-            hideBackground={cardsHidden}
-          />
+          <Animatable.View ref={verseCardRef} useNativeDriver>
+            <VerseCard
+              reference={verse.reference}
+              tokens={verse.tokens}
+              foundWordSet={foundWordSet}
+              lastFoundWord={lastFoundWord}
+              onNextVerse={handleNextVerse}
+              isComplete={isComplete}
+              hideBackground={cardsHidden}
+            />
+          </Animatable.View>
         </View>
         <ProgressBar found={foundPlacements.length} total={placements.length} />
         <View style={styles.boardArea}>
