@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
   },
   hideButtonContainer: {
     position: 'absolute',
-    top: 12,
+    top: 36,
     left: 0,
     right: 0,
     alignItems: 'center',
