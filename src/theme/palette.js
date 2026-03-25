@@ -14,8 +14,8 @@ export const palette = {
   selectionSoft: '#F9E7BA',
   selectionInvalid: '#E87070',
   selectionInvalidSoft: '#FDDCDC',
-  found: '#4F9C75',
-  foundSoft: '#DDF1E6',
+  found: '#059669',
+  foundSoft: '#6EE7B7',
   verse: '#F4EEE3',
   success: '#2D8A62',
   successSoft: '#E0F3E8',
@@ -23,34 +23,39 @@ export const palette = {
 };
 
 export const wordHighlights = [
+  // Esmeralda
   {
-    fill: '#4F9C75',
-    soft: '#DDF1E6',
-    border: '#347858',
+    fill: '#059669',
+    soft: '#6EE7B7',
+    border: '#047857',
     text: '#FFFFFF',
   },
+  // Âmbar
   {
-    fill: '#C9823F',
-    soft: '#F8E3D0',
-    border: '#9D612A',
+    fill: '#D97706',
+    soft: '#FDBA74',
+    border: '#B45309',
     text: '#FFFFFF',
   },
+  // Violeta
   {
-    fill: '#7A6FD1',
-    soft: '#E6E1FA',
-    border: '#5B4FB7',
+    fill: '#7C3AED',
+    soft: '#C4B5FD',
+    border: '#6D28D9',
     text: '#FFFFFF',
   },
+  // Rosa
   {
-    fill: '#CC6A8E',
-    soft: '#F8DCE7',
-    border: '#A54A6C',
+    fill: '#DB2777',
+    soft: '#F9A8D4',
+    border: '#BE185D',
     text: '#FFFFFF',
   },
+  // Céu
   {
-    fill: '#3F8DA8',
-    soft: '#D8EEF4',
-    border: '#2B6D84',
+    fill: '#0284C7',
+    soft: '#93C5FD',
+    border: '#0369A1',
     text: '#FFFFFF',
   },
 ];
