@@ -61,22 +61,40 @@ function scoreVerse(metrics, options = {}) {
   return score;
 }
 
-function pickVerse(candidates) {
-  const ranked = [...candidates].sort((left, right) => right.score - left.score);
-  const pool = ranked.slice(0, Math.min(8, ranked.length));
+// Histórico da sessão — evita repetir versículos recentes
+const HISTORY_SIZE = Math.floor(verses.length * 0.5);
+const sessionHistory = [];
 
-  return pool[Math.floor(Math.random() * pool.length)]?.verse ?? verses[0];
+function markSeen(id) {
+  if (sessionHistory.includes(id)) return;
+  sessionHistory.push(id);
+  if (sessionHistory.length > HISTORY_SIZE) {
+    sessionHistory.shift();
+  }
+}
+
+function pickVerse(candidates) {
+  // Exclui os vistos recentemente; se todos foram vistos, usa o pool completo
+  const fresh = candidates.filter((c) => !sessionHistory.includes(c.verse.id));
+  const pool = fresh.length > 0 ? fresh : candidates;
+
+  // Ordena por score e sorteia dentro do top 40% (mínimo 6)
+  const ranked = [...pool].sort((left, right) => right.score - left.score);
+  const topN = Math.max(6, Math.ceil(ranked.length * 0.4));
+  const top = ranked.slice(0, topN);
+
+  const picked = top[Math.floor(Math.random() * top.length)]?.verse ?? verses[0];
+  markSeen(picked.id);
+  return picked;
 }
 
 function resolveVerseCandidates(currentId, options = {}) {
   const available = verses.filter((verse) => verse.id !== currentId);
   const metrics = available.map((verse) => buildVerseMetrics(verse, options));
-  const scored = metrics.map((entry) => ({
+  return metrics.map((entry) => ({
     ...entry,
     score: scoreVerse(entry, options),
   }));
-
-  return scored;
 }
 
 export function getInitialVerse(options = {}) {
@@ -85,10 +103,6 @@ export function getInitialVerse(options = {}) {
 
 export function getRandomVerse(currentId, options = {}) {
   const candidates = resolveVerseCandidates(currentId, options);
-
-  if (!candidates.length) {
-    return verses[0];
-  }
-
+  if (!candidates.length) return verses[0];
   return pickVerse(candidates);
 }
