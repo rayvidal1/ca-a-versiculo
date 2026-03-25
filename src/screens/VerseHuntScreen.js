@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ImageBackground, StyleSheet, View } from 'react-native';
+import { ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import images from '../assets/images.js';
 import GameModeSelector from '../components/GameModeSelector.js';
@@ -49,11 +49,11 @@ export default function VerseHuntScreen() {
     );
   }, [selectedMode.id, selectedMode.gameOptions]);
 
+  const [cardsHidden, setCardsHidden] = useState(false);
+
   const {
     verse,
     grid,
-    selectedCells,
-    selectionInvalid,
     foundPlacements,
     foundWordSet,
     isComplete,
@@ -76,15 +76,17 @@ export default function VerseHuntScreen() {
     >
       <View style={styles.overlay} />
       <View style={styles.content}>
-        <VerseCard
-          reference={verse.reference}
-          tokens={verse.tokens}
-          foundWordSet={foundWordSet}
-          onNextVerse={handleNextVerse}
-          isComplete={isComplete}
-        />
+        <View style={cardsHidden ? styles.hidden : null}>
+          <VerseCard
+            reference={verse.reference}
+            tokens={verse.tokens}
+            foundWordSet={foundWordSet}
+            onNextVerse={handleNextVerse}
+            isComplete={isComplete}
+          />
+        </View>
         <View style={styles.boardArea}>
-          <View style={styles.boardCard}>
+          <View style={[styles.boardCard, cardsHidden && styles.boardCardHidden]}>
             <GameModeSelector
               modes={verseHuntModes}
               selectedModeId={selectedMode.id}
@@ -102,6 +104,13 @@ export default function VerseHuntScreen() {
           </View>
         </View>
       </View>
+      <TouchableOpacity
+        style={styles.hideButton}
+        onPress={() => setCardsHidden((v) => !v)}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.hideButtonIcon}>{cardsHidden ? '◉' : '◎'}</Text>
+      </TouchableOpacity>
     </ImageBackground>
   );
 }
@@ -131,5 +140,26 @@ const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.35)',
+  },
+  hidden: {
+    opacity: 0,
+  },
+  boardCardHidden: {
+    backgroundColor: 'transparent',
+  },
+  hideButton: {
+    position: 'absolute',
+    bottom: 28,
+    right: 24,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  hideButtonIcon: {
+    fontSize: 18,
+    color: 'rgba(255,255,255,0.75)',
   },
 });
