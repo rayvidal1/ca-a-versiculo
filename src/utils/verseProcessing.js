@@ -105,9 +105,18 @@ export function selectTargetWords(text, options = {}) {
 
   const targetWordCount = resolveTargetWordCount(candidates.length, options);
 
-  return candidates
-    .sort((left, right) => scoreCandidate(right, right.index) - scoreCandidate(left, left.index))
-    .slice(0, targetWordCount)
+  let selected;
+  if (options.randomWordSelection) {
+    // Embaralha e pega os primeiros N — seleção aleatória
+    const shuffled = [...candidates].sort(() => Math.random() - 0.5);
+    selected = shuffled.slice(0, targetWordCount);
+  } else {
+    selected = candidates
+      .sort((left, right) => scoreCandidate(right, right.index) - scoreCandidate(left, left.index))
+      .slice(0, targetWordCount);
+  }
+
+  return selected
     .sort((left, right) => left.index - right.index)
     .map((token) => ({
       id: token.normalized,
@@ -135,6 +144,7 @@ export function processVerseForHunt(verse, options = {}) {
     minWordLength,
     minFallbackWordLength: options.minFallbackWordLength,
     maxWordLength,
+    randomWordSelection: options.randomWordSelection ?? false,
   });
   const targetWordSet = new Set(targetWords.map((word) => word.normalized));
   const tokens = tokenizeVerse(verse.text).map((token) => ({
