@@ -58,6 +58,7 @@ export default function VerseHuntScreen() {
     placements,
     foundPlacements,
     foundWordSet,
+    lastFoundWord,
     isComplete,
     handleSelectionStart,
     handleSelectionMove,
@@ -82,6 +83,7 @@ export default function VerseHuntScreen() {
           reference={verse.reference}
           tokens={verse.tokens}
           foundWordSet={foundWordSet}
+          lastFoundWord={lastFoundWord}
           onNextVerse={handleNextVerse}
           isComplete={isComplete}
           hideBackground={cardsHidden}

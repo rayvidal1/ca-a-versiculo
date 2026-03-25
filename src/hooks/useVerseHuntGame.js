@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Share } from 'react-native';
 
+import { useSoundEffect } from './useSoundEffect.js';
+
 import { wordHighlights } from '../theme/palette.js';
 import { buildSelectionFromEndpoints } from '../utils/selection.js';
 import { processVerseForHunt } from '../utils/verseProcessing.js';
@@ -156,7 +158,9 @@ export function useVerseHuntGame(verse, options = {}) {
   const [selectedCells, setSelectedCells] = useState([]);
   const [selectionInvalid, setSelectionInvalid] = useState(false);
   const [foundPlacements, setFoundPlacements] = useState([]);
+  const [lastFoundWord, setLastFoundWord] = useState(null);
   const celebration = useRef(new Animated.Value(0)).current;
+  const playSuccess = useSoundEffect();
   const selectionAnchorRef = useRef(null);
   const selectedCellsRef = useRef([]);
 
@@ -179,6 +183,7 @@ export function useVerseHuntGame(verse, options = {}) {
     setSetup(createGameState(verse, options));
     updateSelectedCells([]);
     setFoundPlacements([]);
+    setLastFoundWord(null);
     setSelectionInvalid(false);
     selectionAnchorRef.current = null;
   }, [verse.id, verse.reference, verse.text, optionsKey]);
@@ -222,14 +227,11 @@ export function useVerseHuntGame(verse, options = {}) {
 
     if (matchedPlacement) {
       setFoundPlacements((currentPlacements) => {
-        if (
-          currentPlacements.some(
-            (placement) => placement.word === matchedPlacement.word
-          )
-        ) {
+        if (currentPlacements.some((p) => p.word === matchedPlacement.word)) {
           return currentPlacements;
         }
-
+        setLastFoundWord(matchedPlacement.word);
+        playSuccess();
         return [...currentPlacements, matchedPlacement];
       });
     }
@@ -303,6 +305,7 @@ export function useVerseHuntGame(verse, options = {}) {
     foundCellMap,
     isComplete,
     celebration,
+    lastFoundWord,
     handleSelectionStart,
     handleSelectionMove,
     handleSelectionEnd,

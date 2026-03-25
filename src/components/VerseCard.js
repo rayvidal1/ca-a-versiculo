@@ -1,11 +1,38 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { palette, shadow } from '../theme/palette.js';
+
+function FoundWordToken({ text, isNewlyFound, style }) {
+  const flash = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (!isNewlyFound) return;
+    flash.setValue(1);
+    Animated.timing(flash, {
+      toValue: 0,
+      duration: 700,
+      useNativeDriver: false,
+    }).start();
+  }, [isNewlyFound]);
+
+  const backgroundColor = flash.interpolate({
+    inputRange: [0, 1],
+    outputRange: [palette.accentSoft, '#FFD700'],
+  });
+
+  return (
+    <Animated.Text style={[style, { backgroundColor }]}>
+      {text}
+    </Animated.Text>
+  );
+}
 
 export default function VerseCard({
   reference,
   tokens,
   foundWordSet,
+  lastFoundWord,
   isComplete,
   hideBackground,
   onNextVerse,
@@ -32,15 +59,21 @@ export default function VerseCard({
               }
 
               const isFound = foundWordSet.has(token.normalized);
+              const isNewlyFound = token.normalized === lastFoundWord;
+
+              if (isFound) {
+                return (
+                  <FoundWordToken
+                    key={token.id}
+                    text={token.text}
+                    isNewlyFound={isNewlyFound}
+                    style={[styles.targetWord, styles.targetWordFound]}
+                  />
+                );
+              }
 
               return (
-                <Text
-                  key={token.id}
-                  style={[
-                    styles.targetWord,
-                    isFound ? styles.targetWordFound : styles.targetWordPending,
-                  ]}
-                >
+                <Text key={token.id} style={[styles.targetWord, styles.targetWordPending]}>
                   {token.text}
                 </Text>
               );
@@ -141,7 +174,6 @@ const styles = StyleSheet.create({
     textDecorationColor: palette.accent,
   },
   targetWordFound: {
-    backgroundColor: palette.accentSoft,
     color: palette.primary,
     fontWeight: '700',
   },
