@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, ImageBackground, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
-import * as Animatable from 'react-native-animatable';
+
 import ConfettiCannon from 'react-native-confetti-cannon';
 
 import images from '../assets/images.js';
@@ -49,7 +49,6 @@ export default function VerseHuntScreen() {
   const confettiRef = useRef(null);
 
   const midpointShownRef = useRef(false);
-  const verseCardRef = useRef(null);
   const borderAnim = useRef(new Animated.Value(0)).current;
   const borderLoopRef = useRef(null);
   const [activePhrase, setActivePhrase] = useState(null);
@@ -119,7 +118,6 @@ export default function VerseHuntScreen() {
   useEffect(() => {
     if (isComplete) {
       confettiRef.current?.start();
-      verseCardRef.current?.bounceIn(600);
       playVictory();
       setActivePhrase(pickRandom(END_PHRASES));
       borderLoopRef.current = Animated.loop(
@@ -149,28 +147,31 @@ export default function VerseHuntScreen() {
       <View style={styles.content}>
         <View style={styles.verseCardWrapper}>
           {isComplete && (
-            <Animated.View
-              pointerEvents="none"
-              style={[
-                styles.completeBorder,
-                {
-                  opacity: borderAnim.interpolate({ inputRange: [0, 1], outputRange: [0.35, 1] }),
-                  transform: [{ scale: borderAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.025] }) }],
-                },
-              ]}
-            />
+            <>
+              <Animated.View
+                pointerEvents="none"
+                style={[styles.neonBorderOuter, {
+                  opacity: borderAnim.interpolate({ inputRange: [0, 1], outputRange: [0.12, 0.45] }),
+                }]}
+              />
+              <Animated.View
+                pointerEvents="none"
+                style={[styles.neonBorderCore, {
+                  opacity: borderAnim.interpolate({ inputRange: [0, 1], outputRange: [0.55, 1] }),
+                  transform: [{ scale: borderAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.018] }) }],
+                }]}
+              />
+            </>
           )}
-          <Animatable.View ref={verseCardRef} useNativeDriver>
-            <VerseCard
-              reference={verse.reference}
-              tokens={verse.tokens}
-              foundWordSet={foundWordSet}
-              lastFoundWord={lastFoundWord}
-              onNextVerse={handleNextVerse}
-              isComplete={isComplete}
-              hideBackground={cardsHidden}
-            />
-          </Animatable.View>
+          <VerseCard
+            reference={verse.reference}
+            tokens={verse.tokens}
+            foundWordSet={foundWordSet}
+            lastFoundWord={lastFoundWord}
+            onNextVerse={handleNextVerse}
+            isComplete={isComplete}
+            hideBackground={cardsHidden}
+          />
         </View>
         <ProgressBar found={foundPlacements.length} total={placements.length} />
         <View style={styles.boardArea}>
@@ -275,7 +276,7 @@ const styles = StyleSheet.create({
   verseCardWrapper: {
     position: 'relative',
   },
-  completeBorder: {
+  neonBorderCore: {
     position: 'absolute',
     top: -4,
     left: -4,
@@ -284,5 +285,23 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     borderWidth: 2.5,
     borderColor: '#D7AA59',
+    shadowColor: '#D7AA59',
+    shadowOffset: { width: 0, height: 0 },
+    shadowRadius: 10,
+    shadowOpacity: 1,
+  },
+  neonBorderOuter: {
+    position: 'absolute',
+    top: -14,
+    left: -14,
+    right: -14,
+    bottom: -14,
+    borderRadius: 38,
+    borderWidth: 5,
+    borderColor: '#D7AA59',
+    shadowColor: '#D7AA59',
+    shadowOffset: { width: 0, height: 0 },
+    shadowRadius: 22,
+    shadowOpacity: 1,
   },
 });

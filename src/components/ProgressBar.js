@@ -44,6 +44,18 @@ export default function ProgressBar({ found, total }) {
       style={styles.wrapper}
       onLayout={(e) => setBarWidth(e.nativeEvent.layout.width)}
     >
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          styles.neonGlow,
+          {
+            width: animProgress.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0, barWidth],
+            }),
+          },
+        ]}
+      />
       <View style={styles.bar}>
         <View style={[StyleSheet.absoluteFill, styles.row]}>
           <View style={[styles.zone, { width: w1, backgroundColor: FADED[0] }]} />
@@ -103,6 +115,18 @@ const styles = StyleSheet.create({
     left: 0,
     borderRadius: BAR_H / 2,
     backgroundColor: '#FACC15',
+  },
+  neonGlow: {
+    position: 'absolute',
+    top: (WRAP_H - BAR_H) / 2 - 6,
+    left: 0,
+    height: BAR_H + 12,
+    borderRadius: (BAR_H + 12) / 2,
+    backgroundColor: 'rgba(250,204,21,0.22)',
+    shadowColor: '#FACC15',
+    shadowOffset: { width: 0, height: 0 },
+    shadowRadius: 14,
+    shadowOpacity: 1,
   },
   shine: {
     position: 'absolute',
