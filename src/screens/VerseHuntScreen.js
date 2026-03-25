@@ -14,6 +14,7 @@ import {
   verseHuntModes,
 } from '../constants/verseHuntModes.js';
 import { useVerseHuntGame } from '../hooks/useVerseHuntGame.js';
+import { useVictorySound } from '../hooks/useVictorySound.js';
 import { getInitialVerse, getRandomVerse } from '../services/verseSource.js';
 
 function pickImage(verseId) {
@@ -31,6 +32,7 @@ export default function VerseHuntScreen() {
   const confettiRef = useRef(null);
   const boardRef = useRef(null);
   const verseCardRef = useRef(null);
+  const playVictory = useVictorySound();
 
   const [selectedModeId, setSelectedModeId] = useState(
     DEFAULT_VERSE_HUNT_MODE_ID
@@ -79,6 +81,7 @@ export default function VerseHuntScreen() {
       confettiRef.current?.start();
       boardRef.current?.tada(900);
       verseCardRef.current?.bounceIn(600);
+      playVictory();
     }
   }, [isComplete]);
 
