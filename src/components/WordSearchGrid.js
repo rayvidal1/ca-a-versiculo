@@ -1,13 +1,5 @@
 import { memo, useRef } from 'react';
 import { Animated, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
-import {
-  BlurMask,
-  Canvas,
-  Group,
-  LinearGradient,
-  RoundedRect,
-  vec,
-} from '@shopify/react-native-skia';
 
 import { palette } from '../theme/palette.js';
 
@@ -37,35 +29,22 @@ function getCellCenter(cell, metrics) {
 }
 
 
-// Pílula Skia: glow colorido + gradiente suave na palavra encontrada
-function FoundPill({ cells, metrics, thickness, softColor, fillColor }) {
+function buildHighlightStyle(cells, metrics, thickness) {
+  if (!cells?.length) return null;
   const start = getCellCenter(cells[0], metrics);
-  const end   = getCellCenter(cells[cells.length - 1], metrics);
-  const dx    = end.x - start.x;
-  const dy    = end.y - start.y;
-  const dist  = Math.hypot(dx, dy);
-  const w     = dist + metrics.cellSize * 0.92;
-  const h     = thickness;
-  const cx    = (start.x + end.x) / 2;
-  const cy    = (start.y + end.y) / 2;
-  const angle = Math.atan2(dy, dx);
-
-  return (
-    <Group transform={[{ translateX: cx }, { translateY: cy }, { rotate: angle }]}>
-      {/* Glow colorido real via BlurMask */}
-      <RoundedRect x={-w / 2} y={-h / 2} width={w} height={h} r={h / 2} color={fillColor} opacity={0.45}>
-        <BlurMask blur={10} style="outer" />
-      </RoundedRect>
-      {/* Preenchimento com gradiente suave topo→base */}
-      <RoundedRect x={-w / 2} y={-h / 2} width={w} height={h} r={h / 2}>
-        <LinearGradient
-          start={vec(-w / 2, -h / 2)}
-          end={vec(-w / 2, h / 2)}
-          colors={[softColor, softColor + 'CC']}
-        />
-      </RoundedRect>
-    </Group>
-  );
+  const end = getCellCenter(cells[cells.length - 1], metrics);
+  const deltaX = end.x - start.x;
+  const deltaY = end.y - start.y;
+  const distance = Math.hypot(deltaX, deltaY);
+  const width = distance + metrics.cellSize * 0.92;
+  return {
+    left: (start.x + end.x) / 2 - width / 2,
+    top: (start.y + end.y) / 2 - thickness / 2,
+    width,
+    height: thickness,
+    borderRadius: thickness / 2,
+    transform: [{ rotateZ: `${Math.atan2(deltaY, deltaX)}rad` }],
+  };
 }
 
 // Converte locationX/Y (relativo ao gridFrame) em célula da grade.
@@ -308,24 +287,20 @@ function WordSearchGrid({
         {/* pointerEvents="none" garante que locationX/Y das views filhas não
             interceptem o toque — o gridFrame sempre é o alvo do toque */}
         <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-          {/* Canvas Skia: pílulas de palavras encontradas com glow real */}
-          <Canvas style={StyleSheet.absoluteFill}>
-            {foundPlacements.map((placement) => {
-              if (!placement.cells?.length) return null;
-              const softColor = placement.color?.soft || palette.foundSoft;
-              const fillColor = placement.color?.fill || palette.found;
-              return (
-                <FoundPill
-                  key={placement.word}
-                  cells={placement.cells}
-                  metrics={metrics}
-                  thickness={foundLineThickness}
-                  softColor={softColor}
-                  fillColor={fillColor}
-                />
-              );
-            })}
-          </Canvas>
+          {foundPlacements.map((placement) => {
+            const lineStyle = buildHighlightStyle(placement.cells, metrics, foundLineThickness);
+            if (!lineStyle) return null;
+            return (
+              <View
+                key={`found-line-${placement.word}`}
+                style={[
+                  styles.highlightLine,
+                  lineStyle,
+                  { backgroundColor: placement.color?.soft || palette.foundSoft },
+                ]}
+              />
+            );
+          })}
           <Animated.View
             style={[
               styles.highlightLine,
