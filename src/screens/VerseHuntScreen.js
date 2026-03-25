@@ -104,13 +104,15 @@ export default function VerseHuntScreen() {
           </View>
         </View>
       </View>
-      <TouchableOpacity
-        style={styles.hideButton}
-        onPress={() => setCardsHidden((v) => !v)}
-        activeOpacity={0.7}
-      >
-        <Text style={styles.hideButtonIcon}>{cardsHidden ? '◉' : '◎'}</Text>
-      </TouchableOpacity>
+      <View style={styles.hideButtonContainer}>
+        <TouchableOpacity
+          style={styles.hideButton}
+          onPress={() => setCardsHidden((v) => !v)}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.hideButtonIcon}>{cardsHidden ? '◉' : '◎'}</Text>
+        </TouchableOpacity>
+      </View>
     </ImageBackground>
   );
 }
@@ -147,10 +149,14 @@ const styles = StyleSheet.create({
   boardCardHidden: {
     backgroundColor: 'transparent',
   },
-  hideButton: {
+  hideButtonContainer: {
     position: 'absolute',
-    bottom: 28,
-    right: 24,
+    top: 12,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  hideButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
