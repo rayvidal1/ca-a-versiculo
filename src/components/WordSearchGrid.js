@@ -151,6 +151,7 @@ function WordSearchGrid({
   grid,
   foundPlacements = [],
   includeDiagonal = false,
+  letterShadow = false,
   onSelectionStart,
   onSelectionMove,
   onSelectionEnd,
@@ -344,7 +345,7 @@ function WordSearchGrid({
                   { width: metrics.cellSize, height: metrics.cellSize },
                 ]}
               >
-                <Text style={[styles.cellLetter, { fontSize: metrics.letterSize }]}>
+                <Text style={[styles.cellLetter, { fontSize: metrics.letterSize }, letterShadow && styles.cellLetterShadow]}>
                   {cell.letter}
                 </Text>
               </View>
@@ -362,6 +363,7 @@ export default memo(WordSearchGrid, (prev, next) => {
     prev.foundPlacements === next.foundPlacements &&
     prev.disabled === next.disabled &&
     prev.includeDiagonal === next.includeDiagonal &&
+    prev.letterShadow === next.letterShadow &&
     prev.onSelectionStart === next.onSelectionStart &&
     prev.onSelectionMove === next.onSelectionMove &&
     prev.onSelectionEnd === next.onSelectionEnd
@@ -397,5 +399,10 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: '#111111',
+  },
+  cellLetterShadow: {
+    textShadowColor: 'rgba(255,255,255,0.95)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 8,
   },
 });

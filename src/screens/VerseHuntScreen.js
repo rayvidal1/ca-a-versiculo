@@ -95,6 +95,7 @@ export default function VerseHuntScreen() {
               grid={grid}
               foundPlacements={foundPlacements}
               includeDiagonal={selectedMode.gameOptions.includeDiagonal ?? false}
+              letterShadow={cardsHidden}
               onSelectionStart={handleSelectionStart}
               onSelectionMove={handleSelectionMove}
               onSelectionEnd={handleSelectionEnd}

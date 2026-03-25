@@ -16,12 +16,12 @@ export default function VerseCard({
         <View style={styles.glassGlow} pointerEvents="none" />
         <View style={[styles.cardTint, isComplete && styles.cardTintComplete, hideBackground && styles.cardTintHidden]}>
           <View style={styles.header}>
-            <Text style={styles.reference}>{reference}</Text>
+            <Text style={[styles.reference, hideBackground && styles.textShadow]}>{reference}</Text>
             <Pressable style={styles.actionButton} onPress={onNextVerse}>
               <Text style={styles.actionButtonText}>Novo</Text>
             </Pressable>
           </View>
-          <Text style={styles.verse}>
+          <Text style={[styles.verse, hideBackground && styles.textShadow]}>
             {tokens.map((token) => {
               if (!token.isTarget) {
                 return (
@@ -94,6 +94,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 10,
     gap: 12,
+  },
+  textShadow: {
+    textShadowColor: 'rgba(255,255,255,0.95)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 8,
   },
   reference: {
     fontSize: 20,
