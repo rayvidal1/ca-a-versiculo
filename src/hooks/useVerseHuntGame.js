@@ -160,7 +160,7 @@ export function useVerseHuntGame(verse, options = {}) {
   const [foundPlacements, setFoundPlacements] = useState([]);
   const [lastFoundWord, setLastFoundWord] = useState(null);
   const celebration = useRef(new Animated.Value(0)).current;
-  const playSuccess = useSoundEffect();
+  const playSuccess = useSoundEffect(require('../assets/sounds/sucess.mp3'));
   const selectionAnchorRef = useRef(null);
   const selectedCellsRef = useRef([]);
 

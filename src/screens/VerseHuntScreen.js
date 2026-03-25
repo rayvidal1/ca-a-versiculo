@@ -13,6 +13,7 @@ import {
   getVerseHuntModeConfig,
   verseHuntModes,
 } from '../constants/verseHuntModes.js';
+import { useSoundEffect } from '../hooks/useSoundEffect.js';
 import { useVerseHuntGame } from '../hooks/useVerseHuntGame.js';
 import { useVictorySound } from '../hooks/useVictorySound.js';
 import { getInitialVerse, getRandomVerse } from '../services/verseSource.js';
@@ -33,6 +34,7 @@ export default function VerseHuntScreen() {
   const boardRef = useRef(null);
   const verseCardRef = useRef(null);
   const playVictory = useVictorySound();
+  const playGameStart = useSoundEffect(require('../assets/sounds/game-start.wav'));
 
   const [selectedModeId, setSelectedModeId] = useState(
     DEFAULT_VERSE_HUNT_MODE_ID
@@ -86,6 +88,7 @@ export default function VerseHuntScreen() {
   }, [isComplete]);
 
   function handleNextVerse() {
+    playGameStart();
     setCurrentVerse((current) =>
       getRandomVerse(current.id, selectedMode.gameOptions)
     );
