@@ -23,39 +23,39 @@ export const palette = {
 };
 
 export const wordHighlights = [
-  // Esmeralda
+  // Neon Verde
   {
-    fill: '#059669',
-    soft: '#6EE7B7',
-    border: '#047857',
+    fill: '#4DFFA0',
+    soft: '#A3FFD2',
+    border: '#00E676',
+    text: '#003320',
+  },
+  // Neon Laranja
+  {
+    fill: '#FFA040',
+    soft: '#FFCC99',
+    border: '#FF6D00',
     text: '#FFFFFF',
   },
-  // Âmbar
+  // Neon Roxo
   {
-    fill: '#D97706',
-    soft: '#FDBA74',
-    border: '#B45309',
+    fill: '#E57EFF',
+    soft: '#F5BDFF',
+    border: '#D500F9',
     text: '#FFFFFF',
   },
-  // Violeta
+  // Neon Rosa
   {
-    fill: '#7C3AED',
-    soft: '#C4B5FD',
-    border: '#6D28D9',
+    fill: '#FF6680',
+    soft: '#FFAABB',
+    border: '#FF1744',
     text: '#FFFFFF',
   },
-  // Rosa
+  // Neon Azul
   {
-    fill: '#DB2777',
-    soft: '#F9A8D4',
-    border: '#BE185D',
-    text: '#FFFFFF',
-  },
-  // Céu
-  {
-    fill: '#0284C7',
-    soft: '#93C5FD',
-    border: '#0369A1',
+    fill: '#4DD9FF',
+    soft: '#A3EEFF',
+    border: '#00B0FF',
     text: '#FFFFFF',
   },
 ];

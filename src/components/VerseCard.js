@@ -3,26 +3,18 @@ import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { palette, shadow } from '../theme/palette.js';
 
-function FoundWordToken({ text, isNewlyFound, color, style }) {
-  const flash = useRef(new Animated.Value(0)).current;
-  const scale = useRef(new Animated.Value(1)).current;
+function FoundWordToken({ text, color, style }) {
+  const flash = useRef(new Animated.Value(1)).current;
+  const scale = useRef(new Animated.Value(0.7)).current;
+  const translateY = useRef(new Animated.Value(22)).current;
 
   useEffect(() => {
-    if (!isNewlyFound) return;
-    flash.setValue(1);
-    scale.setValue(1);
     Animated.parallel([
-      Animated.timing(flash, {
-        toValue: 0,
-        duration: 700,
-        useNativeDriver: false,
-      }),
-      Animated.sequence([
-        Animated.timing(scale, { toValue: 1.3, duration: 120, useNativeDriver: true }),
-        Animated.spring(scale, { toValue: 1, friction: 4, tension: 200, useNativeDriver: true }),
-      ]),
+      Animated.timing(flash, { toValue: 0, duration: 600, useNativeDriver: false }),
+      Animated.spring(scale, { toValue: 1, friction: 5, tension: 180, useNativeDriver: true }),
+      Animated.spring(translateY, { toValue: 0, friction: 5, tension: 180, useNativeDriver: true }),
     ]).start();
-  }, [isNewlyFound]);
+  }, []);
 
   const fill = color?.fill ?? 'rgba(224, 44, 44, 0.88)';
   const flashColor = color?.border ?? '#FF2222';
@@ -33,9 +25,11 @@ function FoundWordToken({ text, isNewlyFound, color, style }) {
   });
 
   return (
-    <Animated.Text style={[style, { backgroundColor, transform: [{ scale }] }]}>
-      {text}
-    </Animated.Text>
+    <Animated.View style={{ transform: [{ scale }, { translateY }] }}>
+      <Animated.Text style={[style, { backgroundColor }]}>
+        {text}
+      </Animated.Text>
+    </Animated.View>
   );
 }
 
@@ -71,7 +65,6 @@ export default function VerseCard({
               }
 
               const isFound = foundWordSet.has(token.normalized);
-              const isNewlyFound = token.normalized === lastFoundWord;
 
               if (isFound) {
                 const color = wordStyleMap?.[token.normalized];
@@ -79,7 +72,6 @@ export default function VerseCard({
                   <FoundWordToken
                     key={token.id}
                     text={token.text}
-                    isNewlyFound={isNewlyFound}
                     color={color}
                     style={[styles.targetWord, styles.targetWordFound]}
                   />

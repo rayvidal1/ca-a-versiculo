@@ -317,7 +317,7 @@ function WordSearchGrid({
                 style={[
                   styles.highlightLine,
                   lineStyle,
-                  { backgroundColor: placement.color?.soft || palette.foundSoft },
+                  { backgroundColor: placement.color?.fill || palette.found },
                 ]}
               />
             );
