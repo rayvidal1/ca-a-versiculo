@@ -50,7 +50,7 @@ export default function VerseHuntScreen({ modeId, onBack, onVersePlayed }) {
   const midpointShownRef = useRef(false);
   const [activePhrase, setActivePhrase] = useState(null);
   const playVictory = useVictorySound();
-  const playGameStart = useSoundEffect(require('../assets/sounds/game-start.wav'), 0.5);
+  const playGameStart = useSoundEffect(require('../assets/sounds/game-start.wav'), 0.55);
 
   const selectedMode = useMemo(() => getVerseHuntModeConfig(modeId), [modeId]);
   const hasModeInitializedRef = useRef(false);
@@ -80,6 +80,7 @@ export default function VerseHuntScreen({ modeId, onBack, onVersePlayed }) {
     verse,
     grid,
     placements,
+    wordStyleMap,
     foundPlacements,
     foundWordSet,
     lastFoundWord,
@@ -134,6 +135,7 @@ export default function VerseHuntScreen({ modeId, onBack, onVersePlayed }) {
             reference={verse.reference}
             tokens={verse.tokens}
             foundWordSet={foundWordSet}
+            wordStyleMap={wordStyleMap}
             lastFoundWord={lastFoundWord}
             onNextVerse={handleNextVerse}
             isComplete={isComplete}
@@ -206,6 +208,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     gap: 8,
+    paddingTop: 76,
   },
   boardArea: {
     flex: 1,
@@ -241,6 +244,8 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 18,
     backgroundColor: 'rgba(255,255,255,0.18)',
+    borderWidth: 1.2,
+    borderColor: 'rgba(100, 170, 255, 0.75)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -249,6 +254,8 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 18,
     backgroundColor: 'rgba(255,255,255,0.18)',
+    borderWidth: 1.2,
+    borderColor: 'rgba(100, 170, 255, 0.75)',
     alignItems: 'center',
     justifyContent: 'center',
   },

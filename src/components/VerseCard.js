@@ -3,26 +3,37 @@ import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { palette, shadow } from '../theme/palette.js';
 
-function FoundWordToken({ text, isNewlyFound, style }) {
+function FoundWordToken({ text, isNewlyFound, color, style }) {
   const flash = useRef(new Animated.Value(0)).current;
+  const scale = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     if (!isNewlyFound) return;
     flash.setValue(1);
-    Animated.timing(flash, {
-      toValue: 0,
-      duration: 700,
-      useNativeDriver: false,
-    }).start();
+    scale.setValue(1);
+    Animated.parallel([
+      Animated.timing(flash, {
+        toValue: 0,
+        duration: 700,
+        useNativeDriver: false,
+      }),
+      Animated.sequence([
+        Animated.timing(scale, { toValue: 1.3, duration: 120, useNativeDriver: true }),
+        Animated.spring(scale, { toValue: 1, friction: 4, tension: 200, useNativeDriver: true }),
+      ]),
+    ]).start();
   }, [isNewlyFound]);
+
+  const fill = color?.fill ?? 'rgba(224, 44, 44, 0.88)';
+  const flashColor = color?.border ?? '#FF2222';
 
   const backgroundColor = flash.interpolate({
     inputRange: [0, 1],
-    outputRange: [palette.accentSoft, '#FFD700'],
+    outputRange: [fill, flashColor],
   });
 
   return (
-    <Animated.Text style={[style, { backgroundColor }]}>
+    <Animated.Text style={[style, { backgroundColor, transform: [{ scale }] }]}>
       {text}
     </Animated.Text>
   );
@@ -32,6 +43,7 @@ export default function VerseCard({
   reference,
   tokens,
   foundWordSet,
+  wordStyleMap,
   lastFoundWord,
   isComplete,
   hideBackground,
@@ -62,11 +74,13 @@ export default function VerseCard({
               const isNewlyFound = token.normalized === lastFoundWord;
 
               if (isFound) {
+                const color = wordStyleMap?.[token.normalized];
                 return (
                   <FoundWordToken
                     key={token.id}
                     text={token.text}
                     isNewlyFound={isNewlyFound}
+                    color={color}
                     style={[styles.targetWord, styles.targetWordFound]}
                   />
                 );
@@ -94,11 +108,11 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 24,
     overflow: 'hidden',
-    backgroundColor: 'rgba(255,255,255,0.14)',
+    backgroundColor: '#FFFFFF',
   },
   glassGlow: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'transparent',
   },
   cardShellHidden: {
     backgroundColor: 'transparent',
@@ -110,9 +124,9 @@ const styles = StyleSheet.create({
   },
   cardTint: {
     padding: 18,
-    backgroundColor: 'rgba(255,255,255,0.42)',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.32)',
+    borderColor: 'rgba(0,0,0,0.06)',
   },
   cardTintHidden: {
     backgroundColor: 'transparent',
@@ -167,14 +181,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
   },
   targetWordPending: {
-    backgroundColor: palette.verse,
+    backgroundColor: 'rgba(255, 130, 0, 0.45)',
     color: palette.text,
-    textDecorationLine: 'underline',
-    textDecorationStyle: 'dotted',
-    textDecorationColor: palette.accent,
   },
   targetWordFound: {
-    color: palette.primary,
+    color: '#FFFFFF',
     fontWeight: '700',
   },
 });

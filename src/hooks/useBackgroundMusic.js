@@ -11,7 +11,7 @@ export function useBackgroundMusic() {
 
     Audio.Sound.createAsync(
       require('../assets/sounds/harmony-of-heaven.mp3'),
-      { isLooping: true, volume: 0.15 }
+      { isLooping: true, volume: 0.17 }
     ).then(({ sound }) => {
       if (!mounted) {
         sound.unloadAsync();

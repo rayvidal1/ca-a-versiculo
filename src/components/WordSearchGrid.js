@@ -177,7 +177,7 @@ function WordSearchGrid({
   const anchorCellRef = useRef(null);
   const lockedDirectionRef = useRef(null);
   const lastSnappedKeyRef = useRef(null);
-  const playPop = useSoundEffect(require('../assets/sounds/ui-pop.mp3'), 0.42);
+  const playPop = useSoundEffect(require('../assets/sounds/ui-pop.mp3'), 0.46);
 
   // Valores animados — atualizados via .setValue(), sem re-render do React
   const animTX = useRef(new Animated.Value(0)).current;
