@@ -74,7 +74,6 @@ export default function VerseHuntScreen({ modeId, onBack, onVersePlayed }) {
   }, [selectedMode.id, selectedMode.gameOptions]);
 
   const [cardsHidden, setCardsHidden] = useState(false);
-  const [boardAreaHeight, setBoardAreaHeight] = useState(0);
 
   const {
     verse,
@@ -142,10 +141,7 @@ export default function VerseHuntScreen({ modeId, onBack, onVersePlayed }) {
             hideBackground={cardsHidden}
           />
         </View>
-        <View
-          style={styles.boardArea}
-          onLayout={(e) => setBoardAreaHeight(e.nativeEvent.layout.height)}
-        >
+        <View style={styles.boardArea}>
           <View style={[styles.boardCard, cardsHidden && styles.boardCardHidden]}>
             <WordSearchGrid
               grid={grid}
@@ -156,7 +152,6 @@ export default function VerseHuntScreen({ modeId, onBack, onVersePlayed }) {
               onSelectionMove={handleSelectionMove}
               onSelectionEnd={handleSelectionEnd}
               disabled={isComplete}
-              maxHeight={boardAreaHeight > 0 ? boardAreaHeight - 20 : undefined}
             />
           </View>
         </View>
@@ -185,15 +180,17 @@ export default function VerseHuntScreen({ modeId, onBack, onVersePlayed }) {
         />
       )}
       {isComplete && (
-        <ConfettiCannon
-          ref={confettiRef}
-          count={180}
-          origin={{ x: width / 2, y: -20 }}
-          colors={CONFETTI_COLORS}
-          autoStart={false}
-          fadeOut
-          fallSpeed={3000}
-        />
+        <View style={styles.confettiLayer}>
+          <ConfettiCannon
+            ref={confettiRef}
+            count={180}
+            origin={{ x: width / 2, y: -20 }}
+            colors={CONFETTI_COLORS}
+            autoStart={false}
+            fadeOut
+            fallSpeed={3000}
+          />
+        </View>
       )}
     </ImageBackground>
   );
@@ -203,7 +200,8 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     paddingHorizontal: 16,
-    paddingVertical: 20,
+    paddingTop: 20,
+    paddingBottom: 72,
   },
   content: {
     flex: 1,
@@ -211,8 +209,9 @@ const styles = StyleSheet.create({
     paddingTop: 76,
   },
   boardArea: {
-    flex: 1,
+    flex: 5,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   boardCard: {
     alignSelf: 'center',
@@ -228,6 +227,12 @@ const styles = StyleSheet.create({
   },
   boardCardHidden: {
     backgroundColor: 'transparent',
+  },
+  confettiLayer: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 999,
+    elevation: 999,
+    pointerEvents: 'none',
   },
   hideButtonContainer: {
     position: 'absolute',
@@ -264,7 +269,7 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.75)',
   },
   verseCardWrapper: {
-    position: 'relative',
+    flex: 3,
   },
 });
 

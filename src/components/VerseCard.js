@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { palette, shadow } from '../theme/palette.js';
 
@@ -54,6 +54,7 @@ export default function VerseCard({
               <Text style={styles.actionButtonText}>Novo</Text>
             </Pressable>
           </View>
+          <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
           <Text style={[styles.verse, hideBackground && styles.textShadow]}>
             {tokens.map((token) => {
               if (!token.isTarget) {
@@ -85,6 +86,7 @@ export default function VerseCard({
               );
             })}
           </Text>
+          </ScrollView>
         </View>
       </View>
     </View>

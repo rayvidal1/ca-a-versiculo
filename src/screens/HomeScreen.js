@@ -191,9 +191,9 @@ const shimmerStyles = StyleSheet.create({
     fontStyle: 'italic',
     fontFamily: 'serif',
     letterSpacing: 0.5,
-    textShadowColor: 'rgba(255, 210, 80, 0.55)',
+    textShadowColor: 'rgba(255, 210, 80, 0.2)',
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 8,
+    textShadowRadius: 4,
   },
   streakWrapper: {
     position: 'absolute',

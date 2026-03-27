@@ -88,8 +88,16 @@ function pickVerse(candidates) {
   return picked;
 }
 
+const MAX_VERSE_WORDS = 28;
+
+function countWords(text) {
+  return text.trim().split(/\s+/).length;
+}
+
 function resolveVerseCandidates(currentId, options = {}) {
-  const available = verses.filter((verse) => verse.id !== currentId);
+  const available = verses.filter(
+    (verse) => verse.id !== currentId && countWords(verse.text) <= MAX_VERSE_WORDS
+  );
   const metrics = available.map((verse) => buildVerseMetrics(verse, options));
   return metrics.map((entry) => ({
     ...entry,
