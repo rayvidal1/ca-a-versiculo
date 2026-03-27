@@ -1,4 +1,48 @@
-import { Image, ImageBackground, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Animated, Image, ImageBackground, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+
+function ShimmerLabel() {
+  const shimmerAnim = useRef(new Animated.Value(0)).current;
+  const [labelWidth, setLabelWidth] = useState(0);
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.delay(2800),
+        Animated.timing(shimmerAnim, { toValue: 1, duration: 900, useNativeDriver: true }),
+        Animated.timing(shimmerAnim, { toValue: 0, duration: 0, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, []);
+
+  const translateX = shimmerAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-80, labelWidth + 80],
+  });
+
+  return (
+    <View
+      style={shimmerStyles.container}
+      onLayout={(e) => setLabelWidth(e.nativeEvent.layout.width)}
+    >
+      <Text style={shimmerStyles.text}>Um momento leve com Deus!</Text>
+      <Animated.View
+        pointerEvents="none"
+        style={[shimmerStyles.streakWrapper, { transform: [{ translateX }] }]}
+      >
+        <LinearGradient
+          colors={['transparent', 'rgba(255,255,220,0.72)', 'transparent']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={shimmerStyles.streakGradient}
+        />
+      </Animated.View>
+    </View>
+  );
+}
 
 const BG = require('../assets/15.jpg');
 const LOGO = require('../assets/grad.png');
@@ -9,11 +53,22 @@ const COUNT_PANEL_HEIGHT = 116;
 const COUNT_PANEL_RADIUS = 18;
 
 export default function HomeScreen({
-  versesCount,
   onPlay,
   onOpenSettings,
 }) {
   const { height } = useWindowDimensions();
+  const blinkAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(blinkAnim, { toValue: 0.25, duration: 1200, useNativeDriver: true }),
+        Animated.timing(blinkAnim, { toValue: 1, duration: 1200, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, []);
   const logoLift = Math.round(height / 6);
 
   return (
@@ -30,13 +85,18 @@ export default function HomeScreen({
         <View style={styles.heroArea}>
           <View style={[styles.logoFrame, { transform: [{ translateY: -logoLift }] }]}>
             <Image source={LOGO} style={styles.logoImage} resizeMode="contain" />
+            <ShimmerLabel />
           </View>
         </View>
         <TouchableOpacity style={styles.playButton} onPress={onPlay} activeOpacity={0.82}>
-          <View style={styles.countPanel}>
-            <Text style={styles.countNumber}>{versesCount}</Text>
-            <Text style={styles.countLabel}>versículos lidos!</Text>
-          </View>
+          <LinearGradient
+            colors={['transparent', 'rgba(220, 180, 80, 0.18)', 'transparent']}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+            style={styles.countPanel}
+          >
+            <Animated.Text style={[styles.startLabel, { opacity: blinkAnim }]}>Começar</Animated.Text>
+          </LinearGradient>
         </TouchableOpacity>
       </View>
     </ImageBackground>
@@ -83,6 +143,7 @@ const styles = StyleSheet.create({
   },
   logoFrame: {
     alignSelf: 'center',
+    alignItems: 'center',
   },
   logoImage: {
     width: LOGO_WIDTH,
@@ -102,25 +163,45 @@ const styles = StyleSheet.create({
     paddingHorizontal: 28,
     paddingVertical: 14,
     borderRadius: COUNT_PANEL_RADIUS,
-    backgroundColor: 'rgba(236, 204, 104, 0.18)',
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
   },
-  countNumber: {
-    fontSize: 60,
-    fontWeight: '900',
-    color: '#FFFFFF',
-    lineHeight: 64,
-    textShadowColor: 'rgba(255,220,120,0.18)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 12,
-  },
-  countLabel: {
-    fontSize: 16,
+  startLabel: {
+    fontSize: 22,
     fontWeight: '700',
-    color: 'rgba(255,248,229,0.92)',
-    marginTop: 6,
-    letterSpacing: 0.6,
+    color: 'rgba(255,248,229,0.95)',
+    letterSpacing: 1.2,
+    textShadowColor: 'rgba(255,210,80,0.4)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 10,
+  },
+});
+
+const shimmerStyles = StyleSheet.create({
+  container: {
+    alignSelf: 'center',
+    overflow: 'hidden',
+    marginTop: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  text: {
+    color: 'rgba(255, 245, 200, 0.90)',
+    fontSize: 15,
+    fontStyle: 'italic',
+    fontFamily: 'serif',
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(255, 210, 80, 0.55)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 8,
+  },
+  streakWrapper: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 60,
+  },
+  streakGradient: {
+    flex: 1,
   },
 });

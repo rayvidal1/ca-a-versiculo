@@ -42,6 +42,7 @@ function pickRandom(list) {
   return list[Math.floor(Math.random() * list.length)];
 }
 
+
 export default function VerseHuntScreen({ modeId, onBack, onVersePlayed }) {
   const { width } = useWindowDimensions();
   const confettiRef = useRef(null);
@@ -259,3 +260,4 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
 });
+
