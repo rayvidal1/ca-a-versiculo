@@ -53,7 +53,7 @@ export default function VerseHuntScreen() {
   const midpointShownRef = useRef(false);
   const [activePhrase, setActivePhrase] = useState(null);
   const playVictory = useVictorySound();
-  const playGameStart = useSoundEffect(require('../assets/sounds/game-start.wav'));
+  const playGameStart = useSoundEffect(require('../assets/sounds/game-start.wav'), 0.5);
 
   const [selectedModeId, setSelectedModeId] = useState(
     DEFAULT_VERSE_HUNT_MODE_ID

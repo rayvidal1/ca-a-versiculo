@@ -5,7 +5,7 @@ export function useVictorySound() {
   const soundRef = useRef(null);
 
   useEffect(() => {
-    Audio.Sound.createAsync(require('../assets/sounds/victory.mp3'))
+    Audio.Sound.createAsync(require('../assets/sounds/victory.mp3'), { volume: 0.5 })
       .then(({ sound }) => { soundRef.current = sound; })
       .catch(() => {});
 
