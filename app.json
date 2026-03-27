@@ -10,6 +10,9 @@
     ],
     "android": {
       "package": "com.rayvidal.biblucacaversiculo"
-    }
+    },
+    "plugins": [
+      "expo-secure-store"
+    ]
   }
 }

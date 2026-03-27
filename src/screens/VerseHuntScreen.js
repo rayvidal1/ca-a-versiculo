@@ -6,7 +6,6 @@ import ConfettiCannon from 'react-native-confetti-cannon';
 import images from '../assets/images.js';
 import GameModeSelector from '../components/GameModeSelector.js';
 import PhraseToast from '../components/PhraseToast.js';
-import ProgressBar from '../components/ProgressBar.js';
 import VerseCard from '../components/VerseCard.js';
 import WordSearchGrid from '../components/WordSearchGrid.js';
 import {
@@ -46,7 +45,7 @@ function pickRandom(list) {
   return list[Math.floor(Math.random() * list.length)];
 }
 
-export default function VerseHuntScreen() {
+export default function VerseHuntScreen({ onBack, onVersePlayed }) {
   const { width } = useWindowDimensions();
   const confettiRef = useRef(null);
 
@@ -83,6 +82,7 @@ export default function VerseHuntScreen() {
   }, [selectedMode.id, selectedMode.gameOptions]);
 
   const [cardsHidden, setCardsHidden] = useState(false);
+  const [boardAreaHeight, setBoardAreaHeight] = useState(0);
 
   const {
     verse,
@@ -123,6 +123,7 @@ export default function VerseHuntScreen() {
 
   function handleNextVerse() {
     playGameStart();
+    onVersePlayed?.();
     setCurrentVerse((current) =>
       getRandomVerse(current.id, selectedMode.gameOptions)
     );
@@ -147,8 +148,10 @@ export default function VerseHuntScreen() {
             hideBackground={cardsHidden}
           />
         </View>
-        <ProgressBar found={foundPlacements.length} total={placements.length} />
-        <View style={styles.boardArea}>
+        <View
+          style={styles.boardArea}
+          onLayout={(e) => setBoardAreaHeight(e.nativeEvent.layout.height)}
+        >
           <View style={[styles.boardCard, cardsHidden && styles.boardCardHidden]}>
             <GameModeSelector
               modes={verseHuntModes}
@@ -164,11 +167,19 @@ export default function VerseHuntScreen() {
               onSelectionMove={handleSelectionMove}
               onSelectionEnd={handleSelectionEnd}
               disabled={isComplete}
+              maxHeight={boardAreaHeight > 0 ? boardAreaHeight - 80 : undefined}
             />
           </View>
         </View>
       </View>
       <View style={styles.hideButtonContainer}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={onBack}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.hideButtonIcon}>‹</Text>
+        </TouchableOpacity>
         <TouchableOpacity
           style={styles.hideButton}
           onPress={() => setCardsHidden((v) => !v)}
@@ -207,10 +218,10 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    justifyContent: 'center',
-    gap: 16,
+    gap: 8,
   },
   boardArea: {
+    flex: 1,
     alignItems: 'center',
   },
   boardCard: {
@@ -233,7 +244,18 @@ const styles = StyleSheet.create({
     top: 36,
     left: 0,
     right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
+    gap: 12,
+  },
+  backButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   hideButton: {
     width: 36,

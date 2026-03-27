@@ -5,12 +5,20 @@ import { useSoundEffect } from '../hooks/useSoundEffect.js';
 
 import { palette } from '../theme/palette.js';
 
-function resolveGridMetrics(width, rowCount, colCount) {
+function resolveGridMetrics(width, rowCount, colCount, maxHeight) {
   const largerSide = Math.max(rowCount, colCount);
   const horizontalPadding = largerSide >= 11 ? 10 : 14;
   const gap = largerSide >= 9 ? 4 : 5;
   const usableWidth = Math.min(width - 36, 420) - horizontalPadding * 2;
-  const cellSize = Math.floor((usableWidth - gap * (colCount - 1)) / colCount);
+  const cellSizeByWidth = Math.floor((usableWidth - gap * (colCount - 1)) / colCount);
+
+  let cellSize = cellSizeByWidth;
+  if (maxHeight && maxHeight > 0) {
+    const usableHeight = maxHeight - horizontalPadding * 2;
+    const cellSizeByHeight = Math.floor((usableHeight - gap * (rowCount - 1)) / rowCount);
+    cellSize = Math.min(cellSizeByWidth, cellSizeByHeight);
+  }
+  cellSize = Math.max(cellSize, 20);
 
   return {
     cellSize,
@@ -157,11 +165,12 @@ function WordSearchGrid({
   onSelectionMove,
   onSelectionEnd,
   disabled,
+  maxHeight,
 }) {
   const { width } = useWindowDimensions();
   const rowCount = grid.length;
   const colCount = grid[0]?.length ?? 0;
-  const metrics = resolveGridMetrics(width, rowCount, colCount);
+  const metrics = resolveGridMetrics(width, rowCount, colCount, maxHeight);
   const metricsRef = useRef(metrics);
   metricsRef.current = metrics;
 
@@ -371,6 +380,7 @@ export default memo(WordSearchGrid, (prev, next) => {
     prev.disabled === next.disabled &&
     prev.includeDiagonal === next.includeDiagonal &&
     prev.letterShadow === next.letterShadow &&
+    prev.maxHeight === next.maxHeight &&
     prev.onSelectionStart === next.onSelectionStart &&
     prev.onSelectionMove === next.onSelectionMove &&
     prev.onSelectionEnd === next.onSelectionEnd
