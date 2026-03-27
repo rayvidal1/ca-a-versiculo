@@ -1,25 +1,47 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView, StyleSheet } from 'react-native';
 
+import {
+  DEFAULT_VERSE_HUNT_MODE_ID,
+  getVerseHuntModeConfig,
+} from './src/constants/verseHuntModes.js';
 import { useBackgroundMusic } from './src/hooks/useBackgroundMusic.js';
 import { useVersesPlayed } from './src/hooks/useVersesPlayed.js';
 import HomeScreen from './src/screens/HomeScreen.js';
+import SettingsScreen from './src/screens/SettingsScreen.js';
 import VerseHuntScreen from './src/screens/VerseHuntScreen.js';
 import { palette } from './src/theme/palette.js';
 
 export default function App() {
   useBackgroundMusic();
   const [screen, setScreen] = useState('home');
+  const [selectedModeId, setSelectedModeId] = useState(DEFAULT_VERSE_HUNT_MODE_ID);
   const [versesCount, incrementVersesCount] = useVersesPlayed();
+  const selectedMode = useMemo(
+    () => getVerseHuntModeConfig(selectedModeId),
+    [selectedModeId]
+  );
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="light" />
       {screen === 'home' ? (
-        <HomeScreen versesCount={versesCount} onPlay={() => setScreen('game')} />
+        <HomeScreen
+          versesCount={versesCount}
+          onPlay={() => setScreen('game')}
+          onOpenSettings={() => setScreen('settings')}
+        />
+      ) : screen === 'settings' ? (
+        <SettingsScreen
+          selectedModeId={selectedModeId}
+          selectedMode={selectedMode}
+          onSelectMode={setSelectedModeId}
+          onBack={() => setScreen('home')}
+        />
       ) : (
         <VerseHuntScreen
+          modeId={selectedModeId}
           onBack={() => setScreen('home')}
           onVersePlayed={incrementVersesCount}
         />

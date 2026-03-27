@@ -4,14 +4,11 @@ import { ImageBackground, StyleSheet, Text, TouchableOpacity, View, useWindowDim
 import ConfettiCannon from 'react-native-confetti-cannon';
 
 import images from '../assets/images.js';
-import GameModeSelector from '../components/GameModeSelector.js';
 import PhraseToast from '../components/PhraseToast.js';
 import VerseCard from '../components/VerseCard.js';
 import WordSearchGrid from '../components/WordSearchGrid.js';
 import {
-  DEFAULT_VERSE_HUNT_MODE_ID,
   getVerseHuntModeConfig,
-  verseHuntModes,
 } from '../constants/verseHuntModes.js';
 import { useSoundEffect } from '../hooks/useSoundEffect.js';
 import { useVerseHuntGame } from '../hooks/useVerseHuntGame.js';
@@ -45,7 +42,7 @@ function pickRandom(list) {
   return list[Math.floor(Math.random() * list.length)];
 }
 
-export default function VerseHuntScreen({ onBack, onVersePlayed }) {
+export default function VerseHuntScreen({ modeId, onBack, onVersePlayed }) {
   const { width } = useWindowDimensions();
   const confettiRef = useRef(null);
 
@@ -54,20 +51,14 @@ export default function VerseHuntScreen({ onBack, onVersePlayed }) {
   const playVictory = useVictorySound();
   const playGameStart = useSoundEffect(require('../assets/sounds/game-start.wav'), 0.5);
 
-  const [selectedModeId, setSelectedModeId] = useState(
-    DEFAULT_VERSE_HUNT_MODE_ID
-  );
+  const selectedMode = useMemo(() => getVerseHuntModeConfig(modeId), [modeId]);
   const hasModeInitializedRef = useRef(false);
   const [currentVerse, setCurrentVerse] = useState(() =>
-    getInitialVerse(getVerseHuntModeConfig(DEFAULT_VERSE_HUNT_MODE_ID).gameOptions)
+    getInitialVerse(getVerseHuntModeConfig(modeId).gameOptions)
   );
   const backgroundImage = useMemo(
     () => pickImage(currentVerse.id),
     [currentVerse.id]
-  );
-  const selectedMode = useMemo(
-    () => getVerseHuntModeConfig(selectedModeId),
-    [selectedModeId]
   );
 
   useEffect(() => {
@@ -153,11 +144,6 @@ export default function VerseHuntScreen({ onBack, onVersePlayed }) {
           onLayout={(e) => setBoardAreaHeight(e.nativeEvent.layout.height)}
         >
           <View style={[styles.boardCard, cardsHidden && styles.boardCardHidden]}>
-            <GameModeSelector
-              modes={verseHuntModes}
-              selectedModeId={selectedMode.id}
-              onSelectMode={setSelectedModeId}
-            />
             <WordSearchGrid
               grid={grid}
               foundPlacements={foundPlacements}
@@ -167,7 +153,7 @@ export default function VerseHuntScreen({ onBack, onVersePlayed }) {
               onSelectionMove={handleSelectionMove}
               onSelectionEnd={handleSelectionEnd}
               disabled={isComplete}
-              maxHeight={boardAreaHeight > 0 ? boardAreaHeight - 80 : undefined}
+              maxHeight={boardAreaHeight > 0 ? boardAreaHeight - 20 : undefined}
             />
           </View>
         </View>

@@ -1,8 +1,8 @@
 export const verseHuntModes = [
   {
     id: 'facil',
-    label: 'Facil',
-    summary: '6x8 | 5-8 palavras | vitoria rapida',
+    label: 'Fácil',
+    summary: '6x8 | 5-8 palavras | vitória rápida',
     gameOptions: {
       cols: 6,
       rows: 8,
@@ -24,8 +24,8 @@ export const verseHuntModes = [
   },
   {
     id: 'medio',
-    label: 'Medio',
-    summary: '7x9 | 8-12 palavras | mais leitura e confusao',
+    label: 'Médio',
+    summary: '7x9 | 8-12 palavras | mais leitura e confusão',
     gameOptions: {
       cols: 7,
       rows: 9,
@@ -47,7 +47,7 @@ export const verseHuntModes = [
   },
   {
     id: 'dificil',
-    label: 'Dificil',
+    label: 'Difícil',
     summary: '9x11 | 12-18 palavras | foco total',
     gameOptions: {
       cols: 9,
