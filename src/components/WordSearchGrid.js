@@ -1,6 +1,8 @@
 import { memo, useRef } from 'react';
 import { Animated, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
+import { useSoundEffect } from '../hooks/useSoundEffect.js';
+
 import { palette } from '../theme/palette.js';
 
 function resolveGridMetrics(width, rowCount, colCount) {
@@ -165,6 +167,8 @@ function WordSearchGrid({
 
   const anchorCellRef = useRef(null);
   const lockedDirectionRef = useRef(null);
+  const lastSnappedKeyRef = useRef(null);
+  const playPop = useSoundEffect(require('../assets/sounds/ui-pop.mp3'));
 
   // Valores animados — atualizados via .setValue(), sem re-render do React
   const animTX = useRef(new Animated.Value(0)).current;
@@ -206,7 +210,9 @@ function WordSearchGrid({
     if (cell) {
       anchorCellRef.current = cell;
       lockedDirectionRef.current = null;
+      lastSnappedKeyRef.current = `${cell.row}-${cell.col}`;
       animOpacity.setValue(0);
+      playPop();
       callback(cell);
     }
   }
@@ -248,6 +254,12 @@ function WordSearchGrid({
       animOpacity.setValue(0);
     } else {
       updateActiveLine(anchor, snappedCell);
+    }
+
+    const snappedKey = `${snappedCell.row}-${snappedCell.col}`;
+    if (snappedKey !== lastSnappedKeyRef.current) {
+      lastSnappedKeyRef.current = snappedKey;
+      playPop();
     }
 
     callback(snappedCell);
