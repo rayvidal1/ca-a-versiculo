@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, ImageBackground, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { ImageBackground, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 
 import ConfettiCannon from 'react-native-confetti-cannon';
 
@@ -51,8 +51,6 @@ export default function VerseHuntScreen() {
   const confettiRef = useRef(null);
 
   const midpointShownRef = useRef(false);
-  const borderAnim = useRef(new Animated.Value(0)).current;
-  const borderLoopRef = useRef(null);
   const [activePhrase, setActivePhrase] = useState(null);
   const playVictory = useVictorySound();
   const playGameStart = useSoundEffect(require('../assets/sounds/game-start.wav'));
@@ -102,8 +100,6 @@ export default function VerseHuntScreen() {
   // Reseta ao trocar de versículo
   useEffect(() => {
     midpointShownRef.current = false;
-    borderLoopRef.current?.stop();
-    borderAnim.setValue(0);
   }, [currentVerse.id]);
 
   // Frase na metade do desafio
@@ -122,13 +118,6 @@ export default function VerseHuntScreen() {
       confettiRef.current?.start();
       playVictory();
       setActivePhrase(pickRandom(END_PHRASES));
-      borderLoopRef.current = Animated.loop(
-        Animated.sequence([
-          Animated.timing(borderAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
-          Animated.timing(borderAnim, { toValue: 0, duration: 800, useNativeDriver: true }),
-        ])
-      );
-      borderLoopRef.current.start();
     }
   }, [isComplete]);
 
@@ -148,23 +137,6 @@ export default function VerseHuntScreen() {
       <View style={styles.overlay} />
       <View style={styles.content}>
         <View style={styles.verseCardWrapper}>
-          {isComplete && (
-            <>
-              <Animated.View
-                pointerEvents="none"
-                style={[styles.neonBorderOuter, {
-                  opacity: borderAnim.interpolate({ inputRange: [0, 1], outputRange: [0.12, 0.45] }),
-                }]}
-              />
-              <Animated.View
-                pointerEvents="none"
-                style={[styles.neonBorderCore, {
-                  opacity: borderAnim.interpolate({ inputRange: [0, 1], outputRange: [0.55, 1] }),
-                  transform: [{ scale: borderAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.018] }) }],
-                }]}
-              />
-            </>
-          )}
           <VerseCard
             reference={verse.reference}
             tokens={verse.tokens}
@@ -277,33 +249,5 @@ const styles = StyleSheet.create({
   },
   verseCardWrapper: {
     position: 'relative',
-  },
-  neonBorderCore: {
-    position: 'absolute',
-    top: -4,
-    left: -4,
-    right: -4,
-    bottom: -4,
-    borderRadius: 28,
-    borderWidth: 2.5,
-    borderColor: '#D7AA59',
-    shadowColor: '#D7AA59',
-    shadowOffset: { width: 0, height: 0 },
-    shadowRadius: 10,
-    shadowOpacity: 1,
-  },
-  neonBorderOuter: {
-    position: 'absolute',
-    top: -14,
-    left: -14,
-    right: -14,
-    bottom: -14,
-    borderRadius: 38,
-    borderWidth: 5,
-    borderColor: '#D7AA59',
-    shadowColor: '#D7AA59',
-    shadowOffset: { width: 0, height: 0 },
-    shadowRadius: 22,
-    shadowOpacity: 1,
   },
 });
