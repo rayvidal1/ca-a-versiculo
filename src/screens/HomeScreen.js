@@ -1,5 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { Animated, Image, ImageBackground, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { Animated, Easing, Image, ImageBackground, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { useEffect, useRef, useState } from 'react';
 
 function ShimmerLabel() {
@@ -55,9 +55,28 @@ const COUNT_PANEL_RADIUS = 18;
 export default function HomeScreen({
   onPlay,
   onOpenSettings,
+  highlightSettings,
 }) {
   const { height } = useWindowDimensions();
   const blinkAnim = useRef(new Animated.Value(1)).current;
+  const gearRingScale = useRef(new Animated.Value(1)).current;
+  const gearRingOpacity = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (!highlightSettings) return;
+    gearRingOpacity.setValue(1);
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(gearRingScale, { toValue: 2.2, duration: 700, easing: Easing.out(Easing.ease), useNativeDriver: true }),
+        Animated.timing(gearRingOpacity, { toValue: 0, duration: 200, useNativeDriver: true }),
+        Animated.delay(500),
+        Animated.timing(gearRingScale, { toValue: 1, duration: 0, useNativeDriver: true }),
+        Animated.timing(gearRingOpacity, { toValue: 1, duration: 0, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [highlightSettings]);
 
   useEffect(() => {
     const loop = Animated.loop(
@@ -74,13 +93,17 @@ export default function HomeScreen({
   return (
     <ImageBackground source={BG} style={styles.screen} resizeMode="cover">
       <View style={styles.overlay} />
-      <TouchableOpacity
-        style={styles.settingsButton}
-        onPress={onOpenSettings}
-        activeOpacity={0.8}
-      >
-        <Text style={styles.settingsIcon}>⚙️</Text>
-      </TouchableOpacity>
+      <View style={styles.settingsButton}>
+        {highlightSettings && (
+          <Animated.View pointerEvents="none" style={[styles.gearRing, {
+            opacity: gearRingOpacity,
+            transform: [{ scale: gearRingScale }],
+          }]} />
+        )}
+        <TouchableOpacity onPress={onOpenSettings} activeOpacity={0.8}>
+          <Text style={styles.settingsIcon}>⚙️</Text>
+        </TouchableOpacity>
+      </View>
       <View style={styles.content}>
         <View style={styles.heroArea}>
           <View style={[styles.logoFrame, { transform: [{ translateY: -logoLift }] }]}>
@@ -120,6 +143,14 @@ const styles = StyleSheet.create({
     height: 54,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  gearRing: {
+    position: 'absolute',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 220, 80, 0.9)',
   },
   settingsIcon: {
     fontSize: 28,

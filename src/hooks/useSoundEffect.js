@@ -14,12 +14,9 @@ export function useSoundEffect(asset, volume = 1.0) {
     };
   }, []);
 
-  return async function play() {
-    try {
-      if (soundRef.current) {
-        await soundRef.current.setPositionAsync(0);
-        await soundRef.current.playAsync();
-      }
-    } catch {}
+  return function play() {
+    const sound = soundRef.current;
+    if (!sound) return;
+    sound.setPositionAsync(0).then(() => sound.playAsync()).catch(() => {});
   };
 }

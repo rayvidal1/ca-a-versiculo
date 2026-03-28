@@ -14,12 +14,9 @@ export function useVictorySound() {
     };
   }, []);
 
-  return async function playVictory() {
-    try {
-      if (soundRef.current) {
-        await soundRef.current.setPositionAsync(0);
-        await soundRef.current.playAsync();
-      }
-    } catch {}
+  return function playVictory() {
+    const sound = soundRef.current;
+    if (!sound) return;
+    sound.setPositionAsync(0).then(() => sound.playAsync()).catch(() => {});
   };
 }

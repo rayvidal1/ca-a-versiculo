@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ImageBackground, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { Animated, Easing, ImageBackground, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 
 import ConfettiCannon from 'react-native-confetti-cannon';
 
@@ -9,6 +9,7 @@ import VerseCard from '../components/VerseCard.js';
 import WordSearchGrid from '../components/WordSearchGrid.js';
 import {
   getVerseHuntModeConfig,
+  getTutorialOptions,
 } from '../constants/verseHuntModes.js';
 import { useSoundEffect } from '../hooks/useSoundEffect.js';
 import { useVerseHuntGame } from '../hooks/useVerseHuntGame.js';
@@ -43,7 +44,7 @@ function pickRandom(list) {
 }
 
 
-export default function VerseHuntScreen({ modeId, onBack, onVersePlayed }) {
+export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onBack, onVersePlayed }) {
   const { width } = useWindowDimensions();
   const confettiRef = useRef(null);
 
@@ -53,9 +54,10 @@ export default function VerseHuntScreen({ modeId, onBack, onVersePlayed }) {
   const playGameStart = useSoundEffect(require('../assets/sounds/game-start.wav'), 0.55);
 
   const selectedMode = useMemo(() => getVerseHuntModeConfig(modeId), [modeId]);
+  const activeGameOptions = isTutorial ? getTutorialOptions(tutorialRound) : selectedMode.gameOptions;
   const hasModeInitializedRef = useRef(false);
   const [currentVerse, setCurrentVerse] = useState(() =>
-    getInitialVerse(getVerseHuntModeConfig(modeId).gameOptions)
+    getInitialVerse(isTutorial ? getTutorialOptions(tutorialRound) : getVerseHuntModeConfig(modeId).gameOptions)
   );
   const backgroundImage = useMemo(
     () => pickImage(currentVerse.id),
@@ -74,6 +76,26 @@ export default function VerseHuntScreen({ modeId, onBack, onVersePlayed }) {
   }, [selectedMode.id, selectedMode.gameOptions]);
 
   const [cardsHidden, setCardsHidden] = useState(false);
+  const [hintWord, setHintWord] = useState(null);
+  const isFirstRound = isTutorial && tutorialRound === 1;
+  const [hideButtonTipDismissed, setHideButtonTipDismissed] = useState(false);
+  const isThirdRound = isTutorial && tutorialRound === 3;
+  const showHideButtonTip = isThirdRound && !hideButtonTipDismissed && !cardsHidden;
+  const tipPulse = useRef(new Animated.Value(0)).current;
+  const tipOpacity = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (!isThirdRound) return;
+    Animated.timing(tipOpacity, { toValue: 1, duration: 350, useNativeDriver: true }).start();
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(tipPulse, { toValue: 1, duration: 700, easing: Easing.out(Easing.ease), useNativeDriver: true }),
+        Animated.timing(tipPulse, { toValue: 0, duration: 700, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [isThirdRound]);
 
   const {
     verse,
@@ -84,10 +106,41 @@ export default function VerseHuntScreen({ modeId, onBack, onVersePlayed }) {
     foundWordSet,
     lastFoundWord,
     isComplete,
+    addFoundPlacement,
     handleSelectionStart,
     handleSelectionMove,
     handleSelectionEnd,
-  } = useVerseHuntGame(currentVerse, selectedMode.gameOptions);
+  } = useVerseHuntGame(currentVerse, activeGameOptions, {
+    onComplete: () => {
+      confettiRef.current?.start();
+      playVictory();
+      setActivePhrase(pickRandom(END_PHRASES));
+    },
+  });
+
+  const guideActive = isFirstRound && !isComplete && placements.length > 0;
+  const guidePlacement = guideActive ? (placements.find(p => !foundWordSet.has(p.word)) ?? null) : null;
+  const guideHintCell = guidePlacement ? (grid[guidePlacement.cells[0]?.row]?.[guidePlacement.cells[0]?.col] ?? null) : null;
+
+  useEffect(() => { setHintWord(null); }, [currentVerse.id]);
+  useEffect(() => {
+    if (hintWord && foundWordSet.has(hintWord)) setHintWord(null);
+  }, [foundWordSet, hintWord]);
+
+  function handleHint() {
+    if (!verse?.tokens) return;
+    const next = verse.tokens.find((t) => t.isTarget && !foundWordSet.has(t.normalized));
+    if (!next) return;
+    setHintWord(next.normalized);
+  }
+
+  const hintCell = useMemo(() => {
+    if (!hintWord || !placements?.length) return null;
+    const placement = placements.find((p) => p.word === hintWord);
+    const cell = placement?.cells?.[0];
+    if (!cell) return null;
+    return grid[cell.row]?.[cell.col] ?? null;
+  }, [hintWord, placements, grid]);
 
   // Reseta ao trocar de versículo
   useEffect(() => {
@@ -104,20 +157,12 @@ export default function VerseHuntScreen({ modeId, onBack, onVersePlayed }) {
     }
   }, [foundPlacements.length]);
 
-  // Celebração ao completar
-  useEffect(() => {
-    if (isComplete) {
-      confettiRef.current?.start();
-      playVictory();
-      setActivePhrase(pickRandom(END_PHRASES));
-    }
-  }, [isComplete]);
 
   function handleNextVerse() {
     playGameStart();
     onVersePlayed?.();
     setCurrentVerse((current) =>
-      getRandomVerse(current.id, selectedMode.gameOptions)
+      getRandomVerse(current.id, activeGameOptions)
     );
   }
 
@@ -136,9 +181,12 @@ export default function VerseHuntScreen({ modeId, onBack, onVersePlayed }) {
             foundWordSet={foundWordSet}
             wordStyleMap={wordStyleMap}
             lastFoundWord={lastFoundWord}
+            hintWord={guideActive ? placements[0]?.word : hintWord}
+            onHint={handleHint}
             onNextVerse={handleNextVerse}
             isComplete={isComplete}
             hideBackground={cardsHidden}
+            highlightNovo={isTutorial && tutorialRound === 2}
           />
         </View>
         <View style={styles.boardArea}>
@@ -146,7 +194,12 @@ export default function VerseHuntScreen({ modeId, onBack, onVersePlayed }) {
             <WordSearchGrid
               grid={grid}
               foundPlacements={foundPlacements}
-              includeDiagonal={selectedMode.gameOptions.includeDiagonal ?? false}
+              hintCell={guideHintCell ?? hintCell}
+              guidePlacement={guidePlacement}
+              onGuideComplete={(placement) => {
+                addFoundPlacement(placement);
+              }}
+              includeDiagonal={activeGameOptions.includeDiagonal ?? false}
               letterShadow={cardsHidden}
               onSelectionStart={handleSelectionStart}
               onSelectionMove={handleSelectionMove}
@@ -164,15 +217,33 @@ export default function VerseHuntScreen({ modeId, onBack, onVersePlayed }) {
         >
           <Text style={styles.hideButtonIcon}>‹</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.hideButton}
-          onPress={() => setCardsHidden((v) => !v)}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.hideButtonIcon}>{cardsHidden ? '◉' : '◎'}</Text>
-        </TouchableOpacity>
+        {(!isTutorial || tutorialRound >= 3) && (
+          <View>
+            {showHideButtonTip && (
+              <Animated.View pointerEvents="none" style={[styles.tipRing, {
+                opacity: tipPulse.interpolate({ inputRange: [0, 1], outputRange: [0.8, 0] }),
+                transform: [{ scale: tipPulse.interpolate({ inputRange: [0, 1], outputRange: [1, 2.2] }) }],
+              }]} />
+            )}
+            <TouchableOpacity
+              style={[styles.hideButton, showHideButtonTip && styles.hideButtonHighlight]}
+              onPress={() => {
+                setCardsHidden((v) => !v);
+                setHideButtonTipDismissed(true);
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.hideButtonIcon}>{cardsHidden ? '◉' : '◎'}</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
-      {activePhrase && (
+      {showHideButtonTip && (
+        <Animated.View style={[styles.tipCard, { opacity: tipOpacity }]} pointerEvents="none">
+          <Text style={styles.tipText}>Toque em <Text style={styles.tipHighlight}>◎</Text> para jogar sem fundo e testar seu foco!</Text>
+        </Animated.View>
+      )}
+{activePhrase && (
         <PhraseToast
           key={activePhrase + foundPlacements.length}
           phrase={activePhrase}
@@ -267,6 +338,41 @@ const styles = StyleSheet.create({
   hideButtonIcon: {
     fontSize: 18,
     color: 'rgba(255,255,255,0.75)',
+  },
+  hideButtonHighlight: {
+    borderColor: 'rgba(255, 220, 80, 0.9)',
+    backgroundColor: 'rgba(255, 200, 50, 0.25)',
+  },
+  tipRing: {
+    position: 'absolute',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 220, 80, 0.9)',
+    alignSelf: 'center',
+    top: 0,
+  },
+  tipCard: {
+    position: 'absolute',
+    bottom: 78,
+    left: 24,
+    right: 24,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    borderRadius: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+  },
+  tipText: {
+    color: '#1a2e1a',
+    fontSize: 15,
+    fontWeight: '500',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  tipHighlight: {
+    color: '#2D6A57',
+    fontWeight: '800',
   },
   verseCardWrapper: {
     flex: 3,

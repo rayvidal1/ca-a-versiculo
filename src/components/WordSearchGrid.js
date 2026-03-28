@@ -1,5 +1,5 @@
-import { memo, useRef } from 'react';
-import { Animated, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { memo, useEffect, useRef } from 'react';
+import { Animated, Easing, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
 import { useSoundEffect } from '../hooks/useSoundEffect.js';
 
@@ -156,9 +156,42 @@ function getSnappedEndCell(locationX, locationY, anchor, direction, grid, metric
 
 const BASE_LINE_WIDTH = 600;
 
+function renderHintCircle(hintCell, metrics, hintPulse) {
+  const stride = metrics.cellSize + metrics.gap;
+  const cx = metrics.horizontalPadding + hintCell.col * stride + metrics.cellSize / 2;
+  const cy = metrics.horizontalPadding + hintCell.row * stride + metrics.cellSize / 2;
+  const r = metrics.cellSize * 0.54;
+  return (
+    <Animated.View
+      key="hint-circle"
+      style={{
+        position: 'absolute',
+        width: r * 2,
+        height: r * 2,
+        borderRadius: r,
+        borderWidth: 3,
+        borderColor: '#FF1744',
+        backgroundColor: 'rgba(255, 23, 68, 0.15)',
+        left: cx - r,
+        top: cy - r,
+        alignItems: 'center',
+        justifyContent: 'center',
+        transform: [{ scale: hintPulse }],
+      }}
+    >
+      <Text style={{ fontSize: metrics.letterSize, fontWeight: '900', color: '#FF1744' }}>
+        {hintCell.letter}
+      </Text>
+    </Animated.View>
+  );
+}
+
 function WordSearchGrid({
   grid,
   foundPlacements = [],
+  hintCell = null,
+  guidePlacement = null,
+  onGuideComplete,
   includeDiagonal = false,
   letterShadow = false,
   onSelectionStart,
@@ -177,7 +210,25 @@ function WordSearchGrid({
   const anchorCellRef = useRef(null);
   const lockedDirectionRef = useRef(null);
   const lastSnappedKeyRef = useRef(null);
+  const guidePlacementRef = useRef(guidePlacement);
+  guidePlacementRef.current = guidePlacement;
+  const onGuideCompleteRef = useRef(onGuideComplete);
+  onGuideCompleteRef.current = onGuideComplete;
   const playPop = useSoundEffect(require('../assets/sounds/ui-pop.mp3'), 0.46);
+
+  const hintPulse = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    if (!hintCell) return;
+    hintPulse.setValue(1);
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(hintPulse, { toValue: 1.5, duration: 500, useNativeDriver: true }),
+        Animated.timing(hintPulse, { toValue: 1, duration: 500, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [hintCell]);
 
   // Valores animados — atualizados via .setValue(), sem re-render do React
   const animTX = useRef(new Animated.Value(0)).current;
@@ -203,6 +254,45 @@ function WordSearchGrid({
     animOpacity.setValue(1);
   }
 
+  function triggerGuideAnimation() {
+    const guide = guidePlacementRef.current;
+    if (!guide?.cells?.length) return;
+    const m = metricsRef.current;
+    const firstCell = guide.cells[0];
+    const lastCell = guide.cells[guide.cells.length - 1];
+    const start = getCellCenter(firstCell, m);
+    const end = getCellCenter(lastCell, m);
+    const deltaX = end.x - start.x;
+    const deltaY = end.y - start.y;
+    const distance = Math.hypot(deltaX, deltaY);
+    const lineWidth = distance + m.cellSize * 0.92;
+    const thickness = Math.max(18, Math.floor(m.cellSize * 0.78));
+    const targetScale = lineWidth / BASE_LINE_WIDTH;
+
+    animTX.setValue((start.x + end.x) / 2 - BASE_LINE_WIDTH / 2);
+    animTY.setValue((start.y + end.y) / 2 - thickness / 2);
+    animAngle.setValue(Math.atan2(deltaY, deltaX));
+    animScale.setValue(0);
+    animOpacity.setValue(1);
+
+    Animated.sequence([
+      Animated.timing(animScale, {
+        toValue: targetScale,
+        duration: 550,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+      Animated.delay(350),
+      Animated.timing(animOpacity, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      onGuideCompleteRef.current?.(guide);
+    });
+  }
+
   // Início do toque: detecta célula via locationX/Y (relativo ao gridFrame),
   // sem necessidade de measureInWindow ou coordenadas absolutas.
   function handleTouchStart(nativeEvent, callback) {
@@ -216,14 +306,24 @@ function WordSearchGrid({
       rowCount,
       colCount
     );
-    if (cell) {
-      anchorCellRef.current = cell;
-      lockedDirectionRef.current = null;
-      lastSnappedKeyRef.current = `${cell.row}-${cell.col}`;
-      animOpacity.setValue(0);
-      playPop();
-      callback(cell);
+    if (!cell) return;
+
+    const guide = guidePlacementRef.current;
+    if (guide?.cells?.length) {
+      const guideFirst = guide.cells[0];
+      if (cell.row === guideFirst.row && cell.col === guideFirst.col) {
+        playPop();
+        triggerGuideAnimation();
+        return;
+      }
     }
+
+    anchorCellRef.current = cell;
+    lockedDirectionRef.current = null;
+    lastSnappedKeyRef.current = `${cell.row}-${cell.col}`;
+    animOpacity.setValue(0);
+    playPop();
+    callback(cell);
   }
 
   // Movimento: trava direção após sair da zona morta (~0.6 célula),
@@ -345,6 +445,7 @@ function WordSearchGrid({
               },
             ]}
           />
+          {hintCell != null && renderHintCircle(hintCell, metrics, hintPulse)}
         </View>
         {grid.map((row, rowIndex) => (
           <View
@@ -377,13 +478,16 @@ export default memo(WordSearchGrid, (prev, next) => {
   return (
     prev.grid === next.grid &&
     prev.foundPlacements === next.foundPlacements &&
+    prev.hintCell === next.hintCell &&
+    prev.guidePlacement === next.guidePlacement &&
     prev.disabled === next.disabled &&
     prev.includeDiagonal === next.includeDiagonal &&
     prev.letterShadow === next.letterShadow &&
     prev.maxHeight === next.maxHeight &&
     prev.onSelectionStart === next.onSelectionStart &&
     prev.onSelectionMove === next.onSelectionMove &&
-    prev.onSelectionEnd === next.onSelectionEnd
+    prev.onSelectionEnd === next.onSelectionEnd &&
+    prev.onGuideComplete === next.onGuideComplete
   );
 });
 

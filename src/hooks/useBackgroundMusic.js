@@ -10,8 +10,8 @@ export function useBackgroundMusic() {
     Audio.setAudioModeAsync({ playsInSilentModeIOS: true }).catch(() => {});
 
     Audio.Sound.createAsync(
-      require('../assets/sounds/harmony-of-heaven.mp3'),
-      { isLooping: true, volume: 0.17 }
+      require('../assets/sounds/fundo-musical.mp3'),
+      { isLooping: true, volume: 0.35 }
     ).then(({ sound }) => {
       if (!mounted) {
         sound.unloadAsync();

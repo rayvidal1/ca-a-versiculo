@@ -152,7 +152,9 @@ function createGameState(verse, options) {
   throw lastError ?? new Error('Nao foi possivel iniciar o jogo.');
 }
 
-export function useVerseHuntGame(verse, options = {}) {
+export function useVerseHuntGame(verse, options = {}, { onComplete } = {}) {
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
   const optionsKey = getOptionsKey(options);
   const [setup, setSetup] = useState(() => createGameState(verse, options));
   const [selectedCells, setSelectedCells] = useState([]);
@@ -232,7 +234,11 @@ export function useVerseHuntGame(verse, options = {}) {
         }
         setLastFoundWord(matchedPlacement.word);
         playSuccess();
-        return [...currentPlacements, matchedPlacement];
+        const next = [...currentPlacements, matchedPlacement];
+        if (next.length === setup.gridState.placements.length) {
+          onCompleteRef.current?.();
+        }
+        return next;
       });
     }
 
@@ -280,6 +286,15 @@ export function useVerseHuntGame(verse, options = {}) {
     selectionAnchorRef.current = null;
   }
 
+  function addFoundPlacement(placement) {
+    setFoundPlacements((current) => {
+      if (current.some((p) => p.word === placement.word)) return current;
+      setLastFoundWord(placement.word);
+      playSuccess();
+      return [...current, placement];
+    });
+  }
+
   async function shareVerse() {
     try {
       await Share.share({
@@ -306,6 +321,7 @@ export function useVerseHuntGame(verse, options = {}) {
     isComplete,
     celebration,
     lastFoundWord,
+    addFoundPlacement,
     handleSelectionStart,
     handleSelectionMove,
     handleSelectionEnd,

@@ -1,7 +1,81 @@
+export const TUTORIAL_ROUNDS = 5;
+
+const tutorialLevels = [
+  // Rodada 1 — guia automático, só direita/baixo
+  {
+    cols: 5, rows: 6,
+    minTargetWordCount: 3, maxTargetWordCount: 4,
+    minWordLength: 3, minFallbackWordLength: 2, maxWordLength: 6,
+    directionDistribution: { right: 70, down: 30, left: 0, up: 0, diagonalDown: 0, diagonalUp: 0 },
+    includeDiagonal: false, allowBackwards: false,
+  },
+  // Rodada 2 — sem guia, mesma grade
+  {
+    cols: 5, rows: 6,
+    minTargetWordCount: 3, maxTargetWordCount: 4,
+    minWordLength: 3, minFallbackWordLength: 2, maxWordLength: 6,
+    directionDistribution: { right: 70, down: 30, left: 0, up: 0, diagonalDown: 0, diagonalUp: 0 },
+    includeDiagonal: false, allowBackwards: false,
+  },
+  // Rodada 3 — grade maior, introduz esquerda
+  {
+    cols: 6, rows: 7,
+    minTargetWordCount: 4, maxTargetWordCount: 5,
+    minWordLength: 3, minFallbackWordLength: 2, maxWordLength: 7,
+    directionDistribution: { right: 50, down: 30, left: 20, up: 0, diagonalDown: 0, diagonalUp: 0 },
+    includeDiagonal: false, allowBackwards: false,
+  },
+  // Rodada 4 — todas as 4 direções
+  {
+    cols: 6, rows: 8,
+    minTargetWordCount: 5, maxTargetWordCount: 6,
+    minWordLength: 3, minFallbackWordLength: 2, maxWordLength: 8,
+    directionDistribution: { right: 35, down: 30, left: 20, up: 15, diagonalDown: 0, diagonalUp: 0 },
+    includeDiagonal: false, allowBackwards: false,
+  },
+  // Rodada 5 — igual ao Fácil, com diagonal
+  {
+    cols: 6, rows: 8,
+    minTargetWordCount: 6, maxTargetWordCount: 8,
+    minWordLength: 4, minFallbackWordLength: 2, maxWordLength: 7,
+    directionDistribution: { right: 40, down: 30, left: 7, up: 3, diagonalDown: 15, diagonalUp: 5 },
+    includeDiagonal: true, allowBackwards: false,
+  },
+];
+
+export function getTutorialOptions(round) {
+  const index = Math.min(round - 1, tutorialLevels.length - 1);
+  return tutorialLevels[index];
+}
+
 export const verseHuntModes = [
   {
     id: 'facil',
     label: 'Fácil',
+    summary: '6x8 | 6-8 palavras | direções básicas',
+    gameOptions: {
+      cols: 6,
+      rows: 8,
+      minTargetWordCount: 6,
+      maxTargetWordCount: 8,
+      minWordLength: 4,
+      minFallbackWordLength: 2,
+      maxWordLength: 7,
+      directionDistribution: {
+        right: 40,
+        down: 30,
+        left: 7,
+        up: 3,
+        diagonalDown: 15,
+        diagonalUp: 5,
+      },
+      includeDiagonal: true,
+      allowBackwards: false,
+    },
+  },
+  {
+    id: 'medio',
+    label: 'Médio',
     summary: '7x9 | 8-12 palavras | mais leitura e confusão',
     gameOptions: {
       cols: 6,
@@ -24,8 +98,8 @@ export const verseHuntModes = [
     },
   },
   {
-    id: 'medio',
-    label: 'Médio',
+    id: 'dificil',
+    label: 'Difícil',
     summary: '7x9 | 12-18 palavras | foco total',
     gameOptions: {
       cols: 7,
@@ -42,30 +116,6 @@ export const verseHuntModes = [
         up: 15,
         diagonalDown: 5,
         diagonalUp: 5,
-      },
-      includeDiagonal: true,
-      allowBackwards: true,
-    },
-  },
-  {
-    id: 'dificil',
-    label: 'Difícil',
-    summary: '9x11 | 12-18 palavras | foco total',
-    gameOptions: {
-      cols: 9,
-      rows: 11,
-      minTargetWordCount: 12,
-      maxTargetWordCount: 18,
-      minWordLength: 4,
-      minFallbackWordLength: 2,
-      maxWordLength: 11,
-      directionDistribution: {
-        right: 20,
-        down: 15,
-        left: 15,
-        up: 15,
-        diagonalDown: 20,
-        diagonalUp: 15,
       },
       includeDiagonal: true,
       allowBackwards: true,
