@@ -134,8 +134,8 @@ function getSnappedEndCell(locationX, locationY, anchor, direction, grid, metric
   } else if (direction.stepCol === 0) {
     steps = (dy * direction.stepRow) / stride;
   } else {
-    // Diagonal: stride diagonal = stride * sqrt(2)
-    steps = (dx * direction.stepCol + dy * direction.stepRow) / (stride * Math.SQRT2);
+    // Diagonal: dot product per step = stepCol*stride + stepRow*stride = 2*stride
+    steps = (dx * direction.stepCol + dy * direction.stepRow) / (2 * stride);
   }
 
   steps = Math.max(0, Math.round(steps));
