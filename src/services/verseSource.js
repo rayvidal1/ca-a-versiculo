@@ -1,5 +1,9 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import verses from '../data/verses.json';
 import { selectTargetWords } from '../utils/verseProcessing.js';
+
+const HISTORY_KEY = 'verse_history';
 
 function resolveRequestedWordRange(options = {}) {
   const max =
@@ -61,9 +65,19 @@ function scoreVerse(metrics, options = {}) {
   return score;
 }
 
-// Histórico da sessão — evita repetir versículos recentes
 const HISTORY_SIZE = Math.floor(verses.length * 0.5);
 const sessionHistory = [];
+
+export async function initVerseHistory() {
+  try {
+    const stored = await AsyncStorage.getItem(HISTORY_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      sessionHistory.length = 0;
+      parsed.forEach((id) => sessionHistory.push(id));
+    }
+  } catch (_) {}
+}
 
 function markSeen(id) {
   if (sessionHistory.includes(id)) return;
@@ -71,6 +85,7 @@ function markSeen(id) {
   if (sessionHistory.length > HISTORY_SIZE) {
     sessionHistory.shift();
   }
+  AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(sessionHistory)).catch(() => {});
 }
 
 function pickVerse(candidates) {

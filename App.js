@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView, StyleSheet } from 'react-native';
 
@@ -9,6 +9,7 @@ import {
   getVerseHuntModeConfig,
 } from './src/constants/verseHuntModes.js';
 import { useBackgroundMusic } from './src/hooks/useBackgroundMusic.js';
+import { initVerseHistory } from './src/services/verseSource.js';
 import { useVersesPlayed } from './src/hooks/useVersesPlayed.js';
 import HomeScreen from './src/screens/HomeScreen.js';
 import SettingsScreen from './src/screens/SettingsScreen.js';
@@ -18,6 +19,7 @@ import { palette } from './src/theme/palette.js';
 
 export default function App() {
   useBackgroundMusic();
+  useEffect(() => { initVerseHistory(); }, []);
   const [screen, setScreen] = useState('splash');
   const [selectedModeId, setSelectedModeId] = useState(DEFAULT_VERSE_HUNT_MODE_ID);
   const [versesCount, incrementVersesCount] = useVersesPlayed();
