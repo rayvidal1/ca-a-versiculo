@@ -64,6 +64,7 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
   }, [selectedMode.id, selectedMode.gameOptions]);
 
   const completionAnim = useRef(new Animated.Value(0)).current;
+  const overlayFadeAnim = useRef(new Animated.Value(0)).current;
 
   const [hintWord, setHintWord] = useState(null);
   const isFirstRound = isTutorial && tutorialRound === 1;
@@ -116,12 +117,20 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
   useEffect(() => {
     if (!isComplete) return;
     const timeout = setTimeout(() => {
-      Animated.timing(completionAnim, {
-        toValue: 1,
-        duration: 1400,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }).start();
+      Animated.parallel([
+        Animated.timing(completionAnim, {
+          toValue: 1,
+          duration: 900,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(overlayFadeAnim, {
+          toValue: 1,
+          duration: 2200,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ]).start();
     }, 280);
     return () => clearTimeout(timeout);
   }, [isComplete]);
@@ -130,6 +139,7 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
   useEffect(() => {
     midpointShownRef.current = false;
     completionAnim.setValue(0);
+    overlayFadeAnim.setValue(0);
   }, [currentVerse.id]);
 
   // Frase na metade do desafio
@@ -145,8 +155,7 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
 
   const boardOpacity = completionAnim.interpolate({ inputRange: [0, 0.6], outputRange: [1, 0], extrapolate: 'clamp' });
   const originalCardOpacity = completionAnim.interpolate({ inputRange: [0, 0.3], outputRange: [1, 0], extrapolate: 'clamp' });
-  const overlayOpacity = completionAnim.interpolate({ inputRange: [0.1, 1], outputRange: [0, 1], extrapolate: 'clamp' });
-  const overlayTranslateY = completionAnim.interpolate({ inputRange: [0.1, 1], outputRange: [-300, 0], extrapolate: 'clamp' });
+  const overlayTranslateY = completionAnim.interpolate({ inputRange: [0, 1], outputRange: [-300, 0], extrapolate: 'clamp' });
 
   function handleNextVerse() {
     playGameStart();
@@ -195,7 +204,7 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
       {isComplete && (
         <Animated.View
           style={[styles.completionOverlay, {
-            opacity: overlayOpacity,
+            opacity: overlayFadeAnim,
             transform: [{ translateY: overlayTranslateY }],
           }]}
         >
