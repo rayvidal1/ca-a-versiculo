@@ -1,4 +1,6 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native';
+
+const BG = require('../assets/fundo.png');
 
 import GameModeSelector from '../components/GameModeSelector.js';
 import { verseHuntModes } from '../constants/verseHuntModes.js';
@@ -11,7 +13,7 @@ export default function SettingsScreen({
   onBack,
 }) {
   return (
-    <View style={styles.screen}>
+    <ImageBackground source={BG} style={styles.screen} resizeMode="cover">
       <View style={styles.content}>
         <View style={styles.topRow}>
           <Pressable style={styles.backButton} onPress={onBack}>
@@ -45,14 +47,13 @@ export default function SettingsScreen({
           </Text>
         </View>
       </View>
-    </View>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
   },
   content: {
     flex: 1,
@@ -70,18 +71,18 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(0,0,0,0.07)',
+    backgroundColor: 'rgba(255,255,255,0.18)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   backButtonIcon: {
     fontSize: 22,
-    color: '#333333',
+    color: '#FFFFFF',
   },
   topLabel: {
     fontSize: 16,
     fontWeight: '700',
-    color: palette.text,
+    color: 'rgba(255,255,255,0.88)',
     letterSpacing: 0.4,
   },
   panel: {

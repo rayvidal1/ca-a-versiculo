@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { ImageBackground, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+
+const BG = require('../assets/fundo.png');
 
 import ConfettiCannon from 'react-native-confetti-cannon';
 
@@ -134,7 +136,7 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
   }
 
   return (
-    <View style={styles.screen}>
+    <ImageBackground source={BG} style={styles.screen} resizeMode="cover">
       <View style={styles.content}>
         <View style={styles.verseCardWrapper}>
           <VerseCard
@@ -198,14 +200,13 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
           />
         </View>
       )}
-    </View>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
     paddingTop: 20,
     paddingBottom: 72,
@@ -247,15 +248,15 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(0,0,0,0.07)',
+    backgroundColor: 'rgba(255,255,255,0.18)',
     borderWidth: 1.2,
-    borderColor: 'rgba(0,0,0,0.12)',
+    borderColor: 'rgba(255,255,255,0.5)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   backButtonIcon: {
     fontSize: 18,
-    color: '#333333',
+    color: '#FFFFFF',
   },
   verseCardWrapper: {
     flex: 3,
