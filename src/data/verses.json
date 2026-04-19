@@ -217,7 +217,7 @@
   {
     "id": "mc-12-30",
     "reference": "Marcos 12:30",
-    "text": "Ame o Senhor, o seu Deus de todo o seu coração, de toda a sua alma, de todo o seu entendimento e de todas as suas forças’."
+    "text": "Ame o Senhor, o seu Deus de todo o seu coração, de toda a sua alma, de todo o seu entendimento e de todas as suas forças'."
   },
   {
     "id": "lc-1-37",
@@ -228,5 +228,225 @@
     "id": "gn-1-1",
     "reference": "Gênesis 1:1",
     "text": "No princípio Deus criou os céus e a terra."
+  },
+  {
+    "id": "sl-34-8",
+    "reference": "Salmos 34:8",
+    "text": "Experimentem e vejam que o Senhor é bom; feliz o homem que nele se refugia!"
+  },
+  {
+    "id": "sl-37-4",
+    "reference": "Salmos 37:4",
+    "text": "Alegre-se no Senhor, e ele atenderá aos desejos do seu coração."
+  },
+  {
+    "id": "sl-55-22",
+    "reference": "Salmos 55:22",
+    "text": "Entregue ao Senhor as suas preocupações e ele o sustentará; ele não deixará que o justo tropece."
+  },
+  {
+    "id": "sl-62-5",
+    "reference": "Salmos 62:5",
+    "text": "Descanse somente em Deus, ó minha alma; a minha esperança vem dele."
+  },
+  {
+    "id": "sl-100-5",
+    "reference": "Salmos 100:5",
+    "text": "Pois o Senhor é bom e o seu amor eterno; a sua fidelidade permanece para sempre."
+  },
+  {
+    "id": "sl-118-24",
+    "reference": "Salmos 118:24",
+    "text": "Este é o dia que o Senhor fez; regozijemo-nos e alegremo-nos nele."
+  },
+  {
+    "id": "sl-139-14",
+    "reference": "Salmos 139:14",
+    "text": "Eu te louvo porque sou feito de modo assombroso e maravilhoso; as tuas obras são maravilhosas, e eu sei muito bem disso."
+  },
+  {
+    "id": "sl-145-18",
+    "reference": "Salmos 145:18",
+    "text": "O Senhor está perto de todos os que o invocam, de todos os que o invocam em verdade."
+  },
+  {
+    "id": "is-26-3",
+    "reference": "Isaías 26:3",
+    "text": "Tu guardarás em perfeita paz aquele cujo propósito é firme, porque ele confia em ti."
+  },
+  {
+    "id": "is-43-2",
+    "reference": "Isaías 43:2",
+    "text": "Quando você atravessar as águas, eu estarei com você; e quando atravessar os rios, eles não o submergirão. Quando você andar pelo fogo, não se queimará; as chamas não o abrasarão."
+  },
+  {
+    "id": "is-43-19",
+    "reference": "Isaías 43:19",
+    "text": "Estou a fazer algo novo! Já está acontecendo; vocês não estão percebendo? Estou abrindo um caminho no deserto e rios na imensidão árida."
+  },
+  {
+    "id": "lm-3-22",
+    "reference": "Lamentações 3:22-23",
+    "text": "Por causa do grande amor do Senhor não somos consumidos, pois as suas misericórdias são inesgotáveis. Renovam-se cada manhã; grande é a sua fidelidade!"
+  },
+  {
+    "id": "mt-5-6",
+    "reference": "Mateus 5:6",
+    "text": "Bem-aventurados os que têm fome e sede de justiça, pois serão saciados."
+  },
+  {
+    "id": "mt-7-7",
+    "reference": "Mateus 7:7",
+    "text": "\"Peçam e lhes será dado; busquem e encontrarão; batam e a porta lhes será aberta."
+  },
+  {
+    "id": "mt-19-26",
+    "reference": "Mateus 19:26",
+    "text": "Jesus olhou para eles e disse: \"Para os homens isso é impossível, mas para Deus tudo é possível\"."
+  },
+  {
+    "id": "mc-11-24",
+    "reference": "Marcos 11:24",
+    "text": "Por isso lhes digo: tudo o que vocês pedirem em oração, creiam que já o receberam, e assim será feito."
+  },
+  {
+    "id": "lc-6-38",
+    "reference": "Lucas 6:38",
+    "text": "Deem, e lhes será dado; uma boa medida, calcada, sacudida e transbordante lhes será dada. Pois a medida que usarem para os outros será usada para vocês\"."
+  },
+  {
+    "id": "jo-1-1",
+    "reference": "João 1:1",
+    "text": "No princípio era o Verbo, e o Verbo estava com Deus, e o Verbo era Deus."
+  },
+  {
+    "id": "jo-8-12",
+    "reference": "João 8:12",
+    "text": "Mais uma vez Jesus falou ao povo: \"Eu sou a luz do mundo. Quem me segue não andará nas trevas, mas terá a luz da vida\"."
+  },
+  {
+    "id": "jo-10-10",
+    "reference": "João 10:10",
+    "text": "O ladrão vem apenas para roubar, matar e destruir; eu vim para que tenham vida, e a tenham plenamente."
+  },
+  {
+    "id": "jo-13-34",
+    "reference": "João 13:34",
+    "text": "\"Um novo mandamento lhes dou: que vocês se amem uns aos outros. Como eu os amei, vocês devem amar uns aos outros."
+  },
+  {
+    "id": "jo-16-33",
+    "reference": "João 16:33",
+    "text": "\"Eu lhes disse essas coisas para que em mim vocês tenham paz. Neste mundo vocês terão aflições; contudo, tenham ânimo! Eu venci o mundo\"."
+  },
+  {
+    "id": "rm-5-8",
+    "reference": "Romanos 5:8",
+    "text": "Mas Deus demonstra seu amor por nós: Cristo morreu em nosso favor quando ainda éramos pecadores."
+  },
+  {
+    "id": "rm-6-23",
+    "reference": "Romanos 6:23",
+    "text": "Pois o salário do pecado é a morte, mas o dom gratuito de Deus é a vida eterna em Cristo Jesus, nosso Senhor."
+  },
+  {
+    "id": "rm-10-9",
+    "reference": "Romanos 10:9",
+    "text": "Se você confessar com a sua boca que Jesus é Senhor e crer no seu coração que Deus o levantou dentre os mortos, será salvo."
+  },
+  {
+    "id": "1co-13-4",
+    "reference": "1 Coríntios 13:4",
+    "text": "O amor é paciente, o amor é bondoso. Não inveja, não se vangloria, não se orgulha."
+  },
+  {
+    "id": "1co-13-13",
+    "reference": "1 Coríntios 13:13",
+    "text": "Agora, pois, permanecem a fé, a esperança e o amor, esses três; mas o maior deles é o amor."
+  },
+  {
+    "id": "2co-5-17",
+    "reference": "2 Coríntios 5:17",
+    "text": "Portanto, se alguém está em Cristo, é nova criação. As coisas antigas já passaram; eis que surgiram coisas novas!"
+  },
+  {
+    "id": "2co-12-9",
+    "reference": "2 Coríntios 12:9",
+    "text": "Mas ele me disse: \"A minha graça é suficiente para você, pois o meu poder se aperfeiçoa na fraqueza\"."
+  },
+  {
+    "id": "gl-2-20",
+    "reference": "Gálatas 2:20",
+    "text": "Fui crucificado com Cristo. Assim, já não sou eu quem vive, mas Cristo vive em mim. A vida que agora vivo no corpo, vivo-a pela fé no Filho de Deus, que me amou e se entregou por mim."
+  },
+  {
+    "id": "ef-3-20",
+    "reference": "Efésios 3:20",
+    "text": "Àquele que pode fazer infinitamente mais do que tudo o que pedimos ou pensamos, de acordo com o seu poder que atua em nós,"
+  },
+  {
+    "id": "fp-4-6",
+    "reference": "Filipenses 4:6",
+    "text": "Não se preocupem com nada, mas em tudo, pela oração e súplicas, e com ações de graças, apresentem os seus pedidos a Deus."
+  },
+  {
+    "id": "cl-3-23",
+    "reference": "Colossenses 3:23",
+    "text": "Tudo o que fizerem, façam de todo o coração, como para o Senhor, e não para os homens,"
+  },
+  {
+    "id": "1ts-5-16",
+    "reference": "1 Tessalonicenses 5:16-18",
+    "text": "Alegrem-se sempre. Orem continuamente. Deem graças em todas as circunstâncias, pois esta é a vontade de Deus para vocês em Cristo Jesus."
+  },
+  {
+    "id": "2tm-1-7",
+    "reference": "2 Timóteo 1:7",
+    "text": "Pois Deus não nos deu um espírito de timidez, mas de poder, de amor e de equilíbrio."
+  },
+  {
+    "id": "hb-11-1",
+    "reference": "Hebreus 11:1",
+    "text": "A fé é a certeza daquilo que esperamos e a prova das coisas que não vemos."
+  },
+  {
+    "id": "hb-13-8",
+    "reference": "Hebreus 13:8",
+    "text": "Jesus Cristo é o mesmo, ontem, hoje e para sempre."
+  },
+  {
+    "id": "tg-1-17",
+    "reference": "Tiago 1:17",
+    "text": "Toda boa dádiva e todo dom perfeito vêm do alto, descendo do Pai das luzes, que não muda como sombras que se movem."
+  },
+  {
+    "id": "1pe-5-7",
+    "reference": "1 Pedro 5:7",
+    "text": "Lancem sobre ele toda a sua ansiedade, porque ele tem cuidado de vocês."
+  },
+  {
+    "id": "ap-3-20",
+    "reference": "Apocalipse 3:20",
+    "text": "Eis que estou à porta e bato. Se alguém ouvir a minha voz e abrir a porta, entrarei e cearei com ele, e ele comigo."
+  },
+  {
+    "id": "pv-16-3",
+    "reference": "Provérbios 16:3",
+    "text": "Entregue ao Senhor tudo o que você faz, e os seus planos serão bem-sucedidos."
+  },
+  {
+    "id": "pv-31-25",
+    "reference": "Provérbios 31:25",
+    "text": "Ela se veste de força e dignidade e ri do futuro sem temor."
+  },
+  {
+    "id": "nm-6-24",
+    "reference": "Números 6:24-26",
+    "text": "O Senhor te abençoe e te guarde; o Senhor faça resplandecer o seu rosto sobre ti e te conceda a sua graça; o Senhor dirija o seu rosto para ti e te dê a paz."
+  },
+  {
+    "id": "dt-31-6",
+    "reference": "Deuteronômio 31:6",
+    "text": "Sejam fortes e corajosos. Não tenham medo nem fiquem apavorados por causa deles, pois o Senhor, o seu Deus, vai com vocês; nunca os deixará, nunca os abandonará\"."
   }
 ]
