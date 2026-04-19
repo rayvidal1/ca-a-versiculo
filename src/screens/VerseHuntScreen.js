@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'center',
     paddingHorizontal: 16,
-    paddingTop: 56,
+    paddingBottom: 80,
   },
   confettiLayer: {
     ...StyleSheet.absoluteFillObject,
