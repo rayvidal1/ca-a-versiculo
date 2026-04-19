@@ -134,7 +134,7 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
         }),
         Animated.timing(boardAnim, {
           toValue: 1,
-          duration: 1600,
+          duration: 1120,
           easing: Easing.out(Easing.quad),
           useNativeDriver: true,
         }),
@@ -163,7 +163,7 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
 
 
   const boardOpacity = boardAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 0] });
-  const boardTranslateY = boardAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -140] });
+  const boardTranslateY = boardAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -70] });
   const originalCardOpacity = completionAnim.interpolate({ inputRange: [0, 0.3], outputRange: [1, 0], extrapolate: 'clamp' });
   const overlayTranslateY = completionAnim.interpolate({ inputRange: [0, 1], outputRange: [-300, 0], extrapolate: 'clamp' });
 
