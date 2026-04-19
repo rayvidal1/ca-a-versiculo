@@ -16,6 +16,7 @@ import { useSoundEffect } from '../hooks/useSoundEffect.js';
 import { useVerseHuntGame } from '../hooks/useVerseHuntGame.js';
 import { useVictorySound } from '../hooks/useVictorySound.js';
 import { getInitialVerse, getRandomVerse } from '../services/verseSource.js';
+import { palette } from '../theme/palette.js';
 
 const CONFETTI_COLORS = ['#059669', '#D97706', '#7C3AED', '#DB2777', '#0284C7', '#F6F1E7', '#FFFFFF'];
 
@@ -228,7 +229,15 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
             onNextVerse={handleNextVerse}
             isComplete={isComplete}
             highlightNovo={false}
+            hideActionButton
           />
+          <TouchableOpacity
+            style={styles.completionNextButton}
+            onPress={handleNextVerse}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.completionNextButtonText}>Novo versículo</Text>
+          </TouchableOpacity>
         </Animated.View>
       )}
       <View style={styles.topBar}>
@@ -289,6 +298,20 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 16,
     paddingHorizontal: 10,
+  },
+  completionNextButton: {
+    marginTop: 14,
+    backgroundColor: palette.primary,
+    borderRadius: 999,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  completionNextButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   completionOverlay: {
     position: 'absolute',

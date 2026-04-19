@@ -44,6 +44,7 @@ export default function VerseCard({
   isComplete,
   onNextVerse,
   highlightNovo,
+  hideActionButton,
 }) {
   const ringScale = useRef(new Animated.Value(1)).current;
   const ringOpacity = useRef(new Animated.Value(0)).current;
@@ -91,17 +92,19 @@ export default function VerseCard({
                   <Text style={styles.hintButtonText}>📖</Text>
                 </Pressable>
               )}
-              <Animated.View style={{ transform: [{ scale: isComplete && !highlightNovo ? completePulse : 1 }] }}>
-                {highlightNovo && (
-                  <Animated.View pointerEvents="none" style={[styles.novoRing, {
-                    opacity: ringOpacity,
-                    transform: [{ scale: ringScale }],
-                  }]} />
-                )}
-                <Pressable style={[styles.actionButton, highlightNovo && styles.actionButtonHighlight, isComplete && !highlightNovo && styles.actionButtonComplete]} onPress={onNextVerse}>
-                  <Text style={styles.actionButtonText}>Novo</Text>
-                </Pressable>
-              </Animated.View>
+              {!hideActionButton && (
+                <Animated.View style={{ transform: [{ scale: isComplete && !highlightNovo ? completePulse : 1 }] }}>
+                  {highlightNovo && (
+                    <Animated.View pointerEvents="none" style={[styles.novoRing, {
+                      opacity: ringOpacity,
+                      transform: [{ scale: ringScale }],
+                    }]} />
+                  )}
+                  <Pressable style={[styles.actionButton, highlightNovo && styles.actionButtonHighlight, isComplete && !highlightNovo && styles.actionButtonComplete]} onPress={onNextVerse}>
+                    <Text style={styles.actionButtonText}>Novo</Text>
+                  </Pressable>
+                </Animated.View>
+              )}
             </View>
           </View>
           <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
