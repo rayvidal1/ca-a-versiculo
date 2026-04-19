@@ -143,12 +143,10 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
   }, [foundPlacements.length]);
 
 
-  const boardTranslateY = completionAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 320] });
-  const boardOpacity = completionAnim.interpolate({ inputRange: [0, 0.55, 1], outputRange: [1, 0.15, 0] });
-  const originalCardOpacity = completionAnim.interpolate({ inputRange: [0, 0.35], outputRange: [1, 0], extrapolate: 'clamp' });
-  const overlayOpacity = completionAnim.interpolate({ inputRange: [0.2, 1], outputRange: [0, 1], extrapolate: 'clamp' });
-  const overlayScale = completionAnim.interpolate({ inputRange: [0.2, 1], outputRange: [0.87, 1], extrapolate: 'clamp' });
-  const overlayTranslateY = completionAnim.interpolate({ inputRange: [0.2, 1], outputRange: [36, 0], extrapolate: 'clamp' });
+  const boardOpacity = completionAnim.interpolate({ inputRange: [0, 0.6], outputRange: [1, 0], extrapolate: 'clamp' });
+  const originalCardOpacity = completionAnim.interpolate({ inputRange: [0, 0.3], outputRange: [1, 0], extrapolate: 'clamp' });
+  const overlayOpacity = completionAnim.interpolate({ inputRange: [0.15, 0.8], outputRange: [0, 1], extrapolate: 'clamp' });
+  const overlayTranslateY = completionAnim.interpolate({ inputRange: [0.15, 1], outputRange: [-160, 0], extrapolate: 'clamp' });
 
   function handleNextVerse() {
     playGameStart();
@@ -175,7 +173,7 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
             highlightNovo={isTutorial && tutorialRound === 2}
           />
         </Animated.View>
-        <Animated.View style={[styles.boardArea, { opacity: boardOpacity, transform: [{ translateY: boardTranslateY }] }]}>
+        <Animated.View style={[styles.boardArea, { opacity: boardOpacity }]}>
           <View style={styles.boardCard}>
             <WordSearchGrid
               grid={grid}
@@ -198,7 +196,7 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
         <Animated.View
           style={[styles.completionOverlay, {
             opacity: overlayOpacity,
-            transform: [{ scale: overlayScale }, { translateY: overlayTranslateY }],
+            transform: [{ translateY: overlayTranslateY }],
           }]}
         >
           <VerseCard
@@ -275,9 +273,13 @@ const styles = StyleSheet.create({
   },
   completionOverlay: {
     position: 'absolute',
-    top: 96,
-    left: 16,
-    right: 16,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 56,
   },
   confettiLayer: {
     ...StyleSheet.absoluteFillObject,
