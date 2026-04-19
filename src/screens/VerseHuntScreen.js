@@ -212,7 +212,6 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
             onNextVerse={handleNextVerse}
             isComplete={isComplete}
             highlightNovo={false}
-            expanded
           />
         </Animated.View>
       )}
@@ -279,7 +278,6 @@ const styles = StyleSheet.create({
     top: 96,
     left: 16,
     right: 16,
-    bottom: 72,
   },
   confettiLayer: {
     ...StyleSheet.absoluteFillObject,
