@@ -301,10 +301,15 @@ const styles = StyleSheet.create({
   },
   completionNextButton: {
     marginTop: 14,
-    backgroundColor: palette.primary,
+    backgroundColor: '#D4900A',
     borderRadius: 999,
     paddingVertical: 16,
     alignItems: 'center',
+    shadowColor: '#F5A623',
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 12,
+    shadowOpacity: 0.5,
+    elevation: 6,
   },
   completionNextButtonText: {
     color: '#FFFFFF',
