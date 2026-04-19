@@ -41,7 +41,7 @@ export default function PhraseToast({ phrase, onHide }) {
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    top: '42%',
+    top: 80,
     left: 20,
     right: 20,
     zIndex: 999,
