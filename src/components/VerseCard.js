@@ -44,6 +44,7 @@ export default function VerseCard({
   isComplete,
   onNextVerse,
   highlightNovo,
+  expanded,
 }) {
   const ringScale = useRef(new Animated.Value(1)).current;
   const ringOpacity = useRef(new Animated.Value(0)).current;
@@ -79,10 +80,10 @@ export default function VerseCard({
   }, [isComplete]);
 
   return (
-    <View style={styles.cardShell}>
-      <View style={styles.card}>
+    <View style={[styles.cardShell, expanded && styles.cardShellExpanded]}>
+      <View style={[styles.card, expanded && styles.cardExpanded]}>
         <View style={styles.glassGlow} pointerEvents="none" />
-        <View style={[styles.cardTint, isComplete && styles.cardTintComplete]}>
+        <View style={[styles.cardTint, isComplete && styles.cardTintComplete, expanded && styles.cardTintExpanded]}>
           <View style={styles.header}>
             <Text style={styles.reference}>{reference}</Text>
             <View style={styles.headerButtons}>
@@ -158,11 +159,20 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'transparent',
   },
+  cardShellExpanded: {
+    flex: 1,
+  },
+  cardExpanded: {
+    flex: 1,
+  },
   cardTint: {
     padding: 18,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: 'rgba(0,0,0,0.06)',
+  },
+  cardTintExpanded: {
+    flex: 1,
   },
   cardTintComplete: {
     backgroundColor: 'rgba(224,243,232,0.4)',

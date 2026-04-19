@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ImageBackground, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { Animated, Easing, ImageBackground, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 
 const BG = require('../assets/fundo.png');
 
@@ -63,6 +63,8 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
     );
   }, [selectedMode.id, selectedMode.gameOptions]);
 
+  const completionAnim = useRef(new Animated.Value(0)).current;
+
   const [hintWord, setHintWord] = useState(null);
   const isFirstRound = isTutorial && tutorialRound === 1;
 
@@ -111,9 +113,23 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
     return grid[cell.row]?.[cell.col] ?? null;
   }, [hintWord, placements, grid]);
 
+  useEffect(() => {
+    if (!isComplete) return;
+    const timeout = setTimeout(() => {
+      Animated.timing(completionAnim, {
+        toValue: 1,
+        duration: 650,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }).start();
+    }, 280);
+    return () => clearTimeout(timeout);
+  }, [isComplete]);
+
   // Reseta ao trocar de versículo
   useEffect(() => {
     midpointShownRef.current = false;
+    completionAnim.setValue(0);
   }, [currentVerse.id]);
 
   // Frase na metade do desafio
@@ -127,6 +143,13 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
   }, [foundPlacements.length]);
 
 
+  const boardTranslateY = completionAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 320] });
+  const boardOpacity = completionAnim.interpolate({ inputRange: [0, 0.55, 1], outputRange: [1, 0.15, 0] });
+  const originalCardOpacity = completionAnim.interpolate({ inputRange: [0, 0.35], outputRange: [1, 0], extrapolate: 'clamp' });
+  const overlayOpacity = completionAnim.interpolate({ inputRange: [0.2, 1], outputRange: [0, 1], extrapolate: 'clamp' });
+  const overlayScale = completionAnim.interpolate({ inputRange: [0.2, 1], outputRange: [0.87, 1], extrapolate: 'clamp' });
+  const overlayTranslateY = completionAnim.interpolate({ inputRange: [0.2, 1], outputRange: [36, 0], extrapolate: 'clamp' });
+
   function handleNextVerse() {
     playGameStart();
     onVersePlayed?.();
@@ -138,7 +161,7 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
   return (
     <ImageBackground source={BG} style={styles.screen} resizeMode="cover">
       <View style={styles.content}>
-        <View style={styles.verseCardWrapper}>
+        <Animated.View style={[styles.verseCardWrapper, { opacity: originalCardOpacity }]}>
           <VerseCard
             reference={verse.reference}
             tokens={verse.tokens}
@@ -151,8 +174,8 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
             isComplete={isComplete}
             highlightNovo={isTutorial && tutorialRound === 2}
           />
-        </View>
-        <View style={styles.boardArea}>
+        </Animated.View>
+        <Animated.View style={[styles.boardArea, { opacity: boardOpacity, transform: [{ translateY: boardTranslateY }] }]}>
           <View style={styles.boardCard}>
             <WordSearchGrid
               grid={grid}
@@ -169,8 +192,30 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
               disabled={isComplete}
             />
           </View>
-        </View>
+        </Animated.View>
       </View>
+      {isComplete && (
+        <Animated.View
+          style={[styles.completionOverlay, {
+            opacity: overlayOpacity,
+            transform: [{ scale: overlayScale }, { translateY: overlayTranslateY }],
+          }]}
+        >
+          <VerseCard
+            reference={verse.reference}
+            tokens={verse.tokens}
+            foundWordSet={foundWordSet}
+            wordStyleMap={wordStyleMap}
+            lastFoundWord={lastFoundWord}
+            hintWord={null}
+            onHint={null}
+            onNextVerse={handleNextVerse}
+            isComplete={isComplete}
+            highlightNovo={false}
+            expanded
+          />
+        </Animated.View>
+      )}
       <View style={styles.topBar}>
         <TouchableOpacity
           style={styles.backButton}
@@ -228,6 +273,13 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 16,
     paddingHorizontal: 10,
+  },
+  completionOverlay: {
+    position: 'absolute',
+    top: 96,
+    left: 16,
+    right: 16,
+    bottom: 72,
   },
   confettiLayer: {
     ...StyleSheet.absoluteFillObject,
