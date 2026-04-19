@@ -87,7 +87,7 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
     onComplete: () => {
       confettiRef.current?.start();
       playVictory();
-      setActivePhrase(pickRandom(END_PHRASES));
+      setActivePhrase({ text: pickRandom(END_PHRASES), duration: 4000 });
     },
   });
 
@@ -156,7 +156,7 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
     const mid = Math.ceil(placements.length / 2);
     if (placements.length > 1 && foundPlacements.length === mid) {
       midpointShownRef.current = true;
-      setActivePhrase(pickRandom(MID_PHRASES));
+      setActivePhrase({ text: pickRandom(MID_PHRASES), duration: 2000 });
     }
   }, [foundPlacements.length]);
 
@@ -242,8 +242,9 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
       </View>
       {activePhrase && (
         <PhraseToast
-          key={activePhrase + foundPlacements.length}
-          phrase={activePhrase}
+          key={activePhrase.text + foundPlacements.length}
+          phrase={activePhrase.text}
+          duration={activePhrase.duration}
           onHide={() => setActivePhrase(null)}
         />
       )}

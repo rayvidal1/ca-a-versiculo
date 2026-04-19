@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, Text } from 'react-native';
 
-export default function PhraseToast({ phrase, onHide }) {
+export default function PhraseToast({ phrase, duration = 2000, onHide }) {
   const translateY = useRef(new Animated.Value(-80)).current;
   const opacity = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(0.7)).current;
@@ -14,13 +14,12 @@ export default function PhraseToast({ phrase, onHide }) {
       Animated.spring(scale, { toValue: 1, useNativeDriver: true, friction: 6, tension: 80 }),
     ]).start();
 
-    // Sai após 2s
     const timer = setTimeout(() => {
       Animated.parallel([
         Animated.timing(opacity, { toValue: 0, duration: 300, useNativeDriver: true }),
         Animated.timing(translateY, { toValue: -40, duration: 300, useNativeDriver: true }),
       ]).start(() => onHide?.());
-    }, 2000);
+    }, duration);
 
     return () => clearTimeout(timer);
   }, []);
