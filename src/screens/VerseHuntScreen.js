@@ -65,6 +65,7 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
 
   const completionAnim = useRef(new Animated.Value(0)).current;
   const overlayFadeAnim = useRef(new Animated.Value(0)).current;
+  const boardAnim = useRef(new Animated.Value(0)).current;
 
   const [hintWord, setHintWord] = useState(null);
   const isFirstRound = isTutorial && tutorialRound === 1;
@@ -130,6 +131,12 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
           easing: Easing.out(Easing.quad),
           useNativeDriver: true,
         }),
+        Animated.timing(boardAnim, {
+          toValue: 1,
+          duration: 1600,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
       ]).start();
     }, 280);
     return () => clearTimeout(timeout);
@@ -140,6 +147,7 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
     midpointShownRef.current = false;
     completionAnim.setValue(0);
     overlayFadeAnim.setValue(0);
+    boardAnim.setValue(0);
   }, [currentVerse.id]);
 
   // Frase na metade do desafio
@@ -153,7 +161,8 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
   }, [foundPlacements.length]);
 
 
-  const boardOpacity = completionAnim.interpolate({ inputRange: [0, 0.6], outputRange: [1, 0], extrapolate: 'clamp' });
+  const boardOpacity = boardAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 0] });
+  const boardTranslateY = boardAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -140] });
   const originalCardOpacity = completionAnim.interpolate({ inputRange: [0, 0.3], outputRange: [1, 0], extrapolate: 'clamp' });
   const overlayTranslateY = completionAnim.interpolate({ inputRange: [0, 1], outputRange: [-300, 0], extrapolate: 'clamp' });
 
@@ -182,7 +191,7 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
             highlightNovo={isTutorial && tutorialRound === 2}
           />
         </Animated.View>
-        <Animated.View style={[styles.boardArea, { opacity: boardOpacity }]}>
+        <Animated.View style={[styles.boardArea, { opacity: boardOpacity, transform: [{ translateY: boardTranslateY }] }]}>
           <View style={styles.boardCard}>
             <WordSearchGrid
               grid={grid}
