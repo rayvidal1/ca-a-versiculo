@@ -3,12 +3,13 @@ import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, View } from 
 
 import { palette, shadow } from '../theme/palette.js';
 
-function FoundWordToken({ text, color, style }) {
-  const flash = useRef(new Animated.Value(1)).current;
-  const scale = useRef(new Animated.Value(0.7)).current;
-  const translateY = useRef(new Animated.Value(22)).current;
+function FoundWordToken({ text, color, style, animate }) {
+  const flash = useRef(new Animated.Value(animate ? 1 : 0)).current;
+  const scale = useRef(new Animated.Value(animate ? 0.7 : 1)).current;
+  const translateY = useRef(new Animated.Value(animate ? 22 : 0)).current;
 
   useEffect(() => {
+    if (!animate) return;
     Animated.parallel([
       Animated.timing(flash, { toValue: 0, duration: 600, useNativeDriver: false }),
       Animated.spring(scale, { toValue: 1, friction: 5, tension: 180, useNativeDriver: true }),
@@ -128,6 +129,7 @@ export default function VerseCard({
                     text={token.text}
                     color={color}
                     style={[styles.targetWord, styles.targetWordFound]}
+                    animate={token.normalized === lastFoundWord}
                   />
                 );
               }
