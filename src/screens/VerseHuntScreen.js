@@ -118,7 +118,7 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
     const timeout = setTimeout(() => {
       Animated.timing(completionAnim, {
         toValue: 1,
-        duration: 900,
+        duration: 1400,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }).start();
