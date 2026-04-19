@@ -85,7 +85,6 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
     handleSelectionEnd,
   } = useVerseHuntGame(currentVerse, activeGameOptions, {
     onComplete: () => {
-      confettiRef.current?.start();
       playVictory();
       setActivePhrase({ text: pickRandom(END_PHRASES), duration: 4000 });
     },
@@ -118,6 +117,7 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
   useEffect(() => {
     if (!isComplete) return;
     const timeout = setTimeout(() => {
+      confettiRef.current?.start();
       Animated.parallel([
         Animated.timing(completionAnim, {
           toValue: 1,
@@ -252,7 +252,7 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
         <View style={styles.confettiLayer}>
           <ConfettiCannon
             ref={confettiRef}
-            count={180}
+            count={35}
             origin={{ x: width / 2, y: -20 }}
             colors={CONFETTI_COLORS}
             autoStart={false}
