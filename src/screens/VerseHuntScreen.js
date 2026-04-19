@@ -118,7 +118,7 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
     const timeout = setTimeout(() => {
       Animated.timing(completionAnim, {
         toValue: 1,
-        duration: 650,
+        duration: 900,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }).start();
@@ -145,8 +145,8 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
 
   const boardOpacity = completionAnim.interpolate({ inputRange: [0, 0.6], outputRange: [1, 0], extrapolate: 'clamp' });
   const originalCardOpacity = completionAnim.interpolate({ inputRange: [0, 0.3], outputRange: [1, 0], extrapolate: 'clamp' });
-  const overlayOpacity = completionAnim.interpolate({ inputRange: [0.15, 0.8], outputRange: [0, 1], extrapolate: 'clamp' });
-  const overlayTranslateY = completionAnim.interpolate({ inputRange: [0.15, 1], outputRange: [-160, 0], extrapolate: 'clamp' });
+  const overlayOpacity = completionAnim.interpolate({ inputRange: [0.1, 1], outputRange: [0, 1], extrapolate: 'clamp' });
+  const overlayTranslateY = completionAnim.interpolate({ inputRange: [0.1, 1], outputRange: [-300, 0], extrapolate: 'clamp' });
 
   function handleNextVerse() {
     playGameStart();
