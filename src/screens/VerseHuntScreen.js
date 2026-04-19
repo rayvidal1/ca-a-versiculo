@@ -67,6 +67,7 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
   const completionAnim = useRef(new Animated.Value(0)).current;
   const overlayFadeAnim = useRef(new Animated.Value(0)).current;
   const boardAnim = useRef(new Animated.Value(0)).current;
+  const buttonPulse = useRef(new Animated.Value(1)).current;
 
   const [hintWord, setHintWord] = useState(null);
   const isFirstRound = isTutorial && tutorialRound === 1;
@@ -138,7 +139,15 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
           easing: Easing.out(Easing.quad),
           useNativeDriver: true,
         }),
-      ]).start();
+      ]).start(() => {
+        const loop = Animated.loop(
+          Animated.sequence([
+            Animated.timing(buttonPulse, { toValue: 0.6, duration: 900, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+            Animated.timing(buttonPulse, { toValue: 1, duration: 900, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+          ])
+        );
+        loop.start();
+      });
     }, 280);
     return () => clearTimeout(timeout);
   }, [isComplete]);
@@ -149,6 +158,7 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
     completionAnim.setValue(0);
     overlayFadeAnim.setValue(0);
     boardAnim.setValue(0);
+    buttonPulse.setValue(1);
   }, [currentVerse.id]);
 
   // Frase na metade do desafio
@@ -231,13 +241,15 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
             highlightNovo={false}
             hideActionButton
           />
-          <TouchableOpacity
-            style={styles.completionNextButton}
-            onPress={handleNextVerse}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.completionNextButtonText}>Novo versículo</Text>
-          </TouchableOpacity>
+          <Animated.View style={{ opacity: buttonPulse }}>
+            <TouchableOpacity
+              style={styles.completionNextButton}
+              onPress={handleNextVerse}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.completionNextButtonText}>Novo versículo</Text>
+            </TouchableOpacity>
+          </Animated.View>
         </Animated.View>
       )}
       <View style={styles.topBar}>
