@@ -1,11 +1,8 @@
-import { ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import images from '../assets/images.js';
 import GameModeSelector from '../components/GameModeSelector.js';
 import { verseHuntModes } from '../constants/verseHuntModes.js';
 import { palette, shadow } from '../theme/palette.js';
-
-const BG = images[1] ?? images[0];
 
 export default function SettingsScreen({
   selectedModeId,
@@ -14,8 +11,7 @@ export default function SettingsScreen({
   onBack,
 }) {
   return (
-    <ImageBackground source={BG} style={styles.screen} resizeMode="cover">
-      <View style={styles.overlay} />
+    <View style={styles.screen}>
       <View style={styles.content}>
         <View style={styles.topRow}>
           <Pressable style={styles.backButton} onPress={onBack}>
@@ -49,17 +45,14 @@ export default function SettingsScreen({
           </Text>
         </View>
       </View>
-    </ImageBackground>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.42)',
+    backgroundColor: '#FFFFFF',
   },
   content: {
     flex: 1,
@@ -77,18 +70,18 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: 'rgba(0,0,0,0.07)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   backButtonIcon: {
     fontSize: 22,
-    color: '#FFFFFF',
+    color: '#333333',
   },
   topLabel: {
     fontSize: 16,
     fontWeight: '700',
-    color: 'rgba(255,255,255,0.88)',
+    color: palette.text,
     letterSpacing: 0.4,
   },
   panel: {

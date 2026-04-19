@@ -42,7 +42,6 @@ export default function VerseCard({
   hintWord,
   onHint,
   isComplete,
-  hideBackground,
   onNextVerse,
   highlightNovo,
 }) {
@@ -80,12 +79,12 @@ export default function VerseCard({
   }, [isComplete]);
 
   return (
-    <View style={[styles.cardShell, hideBackground && styles.cardShellHidden]}>
-      <View style={[styles.card, hideBackground && styles.cardHidden]}>
+    <View style={styles.cardShell}>
+      <View style={styles.card}>
         <View style={styles.glassGlow} pointerEvents="none" />
-        <View style={[styles.cardTint, isComplete && styles.cardTintComplete, hideBackground && styles.cardTintHidden]}>
+        <View style={[styles.cardTint, isComplete && styles.cardTintComplete]}>
           <View style={styles.header}>
-            <Text style={[styles.reference, hideBackground && styles.textShadow]}>{reference}</Text>
+            <Text style={styles.reference}>{reference}</Text>
             <View style={styles.headerButtons}>
               {!isComplete && (
                 <Pressable style={styles.hintButton} onPress={onHint}>
@@ -106,7 +105,7 @@ export default function VerseCard({
             </View>
           </View>
           <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
-          <Text style={[styles.verse, hideBackground && styles.textShadow]}>
+          <Text style={styles.verse}>
             {tokens.map((token) => {
               if (!token.isTarget) {
                 return (
@@ -159,23 +158,11 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'transparent',
   },
-  cardShellHidden: {
-    backgroundColor: 'transparent',
-    shadowOpacity: 0,
-    elevation: 0,
-  },
-  cardHidden: {
-    backgroundColor: 'transparent',
-  },
   cardTint: {
     padding: 18,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: 'rgba(0,0,0,0.06)',
-  },
-  cardTintHidden: {
-    backgroundColor: 'transparent',
-    borderColor: 'transparent',
   },
   cardTintComplete: {
     backgroundColor: 'rgba(224,243,232,0.4)',
@@ -186,11 +173,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 10,
     gap: 12,
-  },
-  textShadow: {
-    textShadowColor: 'rgba(255,255,255,0.95)',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 8,
   },
   reference: {
     fontSize: 20,

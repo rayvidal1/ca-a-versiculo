@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Easing, ImageBackground, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 
 import ConfettiCannon from 'react-native-confetti-cannon';
 
-import images from '../assets/images.js';
 import PhraseToast from '../components/PhraseToast.js';
 import VerseCard from '../components/VerseCard.js';
 import WordSearchGrid from '../components/WordSearchGrid.js';
@@ -15,14 +14,6 @@ import { useSoundEffect } from '../hooks/useSoundEffect.js';
 import { useVerseHuntGame } from '../hooks/useVerseHuntGame.js';
 import { useVictorySound } from '../hooks/useVictorySound.js';
 import { getInitialVerse, getRandomVerse } from '../services/verseSource.js';
-
-function pickImage(verseId) {
-  let hash = 0;
-  for (let i = 0; i < verseId.length; i += 1) {
-    hash = (hash * 31 + verseId.charCodeAt(i)) >>> 0;
-  }
-  return images[hash % images.length];
-}
 
 const CONFETTI_COLORS = ['#059669', '#D97706', '#7C3AED', '#DB2777', '#0284C7', '#F6F1E7', '#FFFFFF'];
 
@@ -59,11 +50,6 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
   const [currentVerse, setCurrentVerse] = useState(() =>
     getInitialVerse(isTutorial ? getTutorialOptions(tutorialRound) : getVerseHuntModeConfig(modeId).gameOptions)
   );
-  const backgroundImage = useMemo(
-    () => pickImage(currentVerse.id),
-    [currentVerse.id]
-  );
-
   useEffect(() => {
     if (!hasModeInitializedRef.current) {
       hasModeInitializedRef.current = true;
@@ -75,27 +61,8 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
     );
   }, [selectedMode.id, selectedMode.gameOptions]);
 
-  const [cardsHidden, setCardsHidden] = useState(false);
   const [hintWord, setHintWord] = useState(null);
   const isFirstRound = isTutorial && tutorialRound === 1;
-  const [hideButtonTipDismissed, setHideButtonTipDismissed] = useState(false);
-  const isThirdRound = isTutorial && tutorialRound === 3;
-  const showHideButtonTip = isThirdRound && !hideButtonTipDismissed && !cardsHidden;
-  const tipPulse = useRef(new Animated.Value(0)).current;
-  const tipOpacity = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    if (!isThirdRound) return;
-    Animated.timing(tipOpacity, { toValue: 1, duration: 350, useNativeDriver: true }).start();
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(tipPulse, { toValue: 1, duration: 700, easing: Easing.out(Easing.ease), useNativeDriver: true }),
-        Animated.timing(tipPulse, { toValue: 0, duration: 700, useNativeDriver: true }),
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [isThirdRound]);
 
   const {
     verse,
@@ -167,12 +134,7 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
   }
 
   return (
-    <ImageBackground
-      source={backgroundImage}
-      style={styles.screen}
-      resizeMode="cover"
-    >
-      <View style={styles.overlay} />
+    <View style={styles.screen}>
       <View style={styles.content}>
         <View style={styles.verseCardWrapper}>
           <VerseCard
@@ -185,12 +147,11 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
             onHint={handleHint}
             onNextVerse={handleNextVerse}
             isComplete={isComplete}
-            hideBackground={cardsHidden}
             highlightNovo={isTutorial && tutorialRound === 2}
           />
         </View>
         <View style={styles.boardArea}>
-          <View style={[styles.boardCard, cardsHidden && styles.boardCardHidden]}>
+          <View style={styles.boardCard}>
             <WordSearchGrid
               grid={grid}
               foundPlacements={foundPlacements}
@@ -200,7 +161,6 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
                 addFoundPlacement(placement);
               }}
               includeDiagonal={activeGameOptions.includeDiagonal ?? false}
-              letterShadow={cardsHidden}
               onSelectionStart={handleSelectionStart}
               onSelectionMove={handleSelectionMove}
               onSelectionEnd={handleSelectionEnd}
@@ -209,41 +169,16 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
           </View>
         </View>
       </View>
-      <View style={styles.hideButtonContainer}>
+      <View style={styles.topBar}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={onBack}
           activeOpacity={0.7}
         >
-          <Text style={styles.hideButtonIcon}>‹</Text>
+          <Text style={styles.backButtonIcon}>‹</Text>
         </TouchableOpacity>
-        {(!isTutorial || tutorialRound >= 3) && (
-          <View>
-            {showHideButtonTip && (
-              <Animated.View pointerEvents="none" style={[styles.tipRing, {
-                opacity: tipPulse.interpolate({ inputRange: [0, 1], outputRange: [0.8, 0] }),
-                transform: [{ scale: tipPulse.interpolate({ inputRange: [0, 1], outputRange: [1, 2.2] }) }],
-              }]} />
-            )}
-            <TouchableOpacity
-              style={[styles.hideButton, showHideButtonTip && styles.hideButtonHighlight]}
-              onPress={() => {
-                setCardsHidden((v) => !v);
-                setHideButtonTipDismissed(true);
-              }}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.hideButtonIcon}>{cardsHidden ? '◉' : '◎'}</Text>
-            </TouchableOpacity>
-          </View>
-        )}
       </View>
-      {showHideButtonTip && (
-        <Animated.View style={[styles.tipCard, { opacity: tipOpacity }]} pointerEvents="none">
-          <Text style={styles.tipText}>Toque em <Text style={styles.tipHighlight}>◎</Text> para jogar sem fundo e testar seu foco!</Text>
-        </Animated.View>
-      )}
-{activePhrase && (
+      {activePhrase && (
         <PhraseToast
           key={activePhrase + foundPlacements.length}
           phrase={activePhrase}
@@ -263,13 +198,14 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
           />
         </View>
       )}
-    </ImageBackground>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
     paddingTop: 20,
     paddingBottom: 72,
@@ -286,18 +222,11 @@ const styles = StyleSheet.create({
   },
   boardCard: {
     alignSelf: 'center',
-    backgroundColor: 'rgba(255,255,255,0.96)',
+    backgroundColor: '#FFFFFF',
     borderRadius: 28,
     paddingTop: 12,
     paddingBottom: 16,
     paddingHorizontal: 10,
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-  },
-  boardCardHidden: {
-    backgroundColor: 'transparent',
   },
   confettiLayer: {
     ...StyleSheet.absoluteFillObject,
@@ -305,7 +234,7 @@ const styles = StyleSheet.create({
     elevation: 999,
     pointerEvents: 'none',
   },
-  hideButtonContainer: {
+  topBar: {
     position: 'absolute',
     top: 36,
     left: 0,
@@ -313,66 +242,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 12,
   },
   backButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: 'rgba(0,0,0,0.07)',
     borderWidth: 1.2,
-    borderColor: 'rgba(100, 170, 255, 0.75)',
+    borderColor: 'rgba(0,0,0,0.12)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  hideButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    borderWidth: 1.2,
-    borderColor: 'rgba(100, 170, 255, 0.75)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  hideButtonIcon: {
+  backButtonIcon: {
     fontSize: 18,
-    color: 'rgba(255,255,255,0.75)',
-  },
-  hideButtonHighlight: {
-    borderColor: 'rgba(255, 220, 80, 0.9)',
-    backgroundColor: 'rgba(255, 200, 50, 0.25)',
-  },
-  tipRing: {
-    position: 'absolute',
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: 2,
-    borderColor: 'rgba(255, 220, 80, 0.9)',
-    alignSelf: 'center',
-    top: 0,
-  },
-  tipCard: {
-    position: 'absolute',
-    bottom: 78,
-    left: 24,
-    right: 24,
-    backgroundColor: 'rgba(255,255,255,0.95)',
-    borderRadius: 16,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-  },
-  tipText: {
-    color: '#1a2e1a',
-    fontSize: 15,
-    fontWeight: '500',
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  tipHighlight: {
-    color: '#2D6A57',
-    fontWeight: '800',
+    color: '#333333',
   },
   verseCardWrapper: {
     flex: 3,
