@@ -4,15 +4,31 @@
     "slug": "biblu-caca-versiculo",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./src/assets/app-icon.png",
     "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./src/assets/splash.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#FFFFFF"
+    },
     "assetBundlePatterns": [
       "**/*"
     ],
     "android": {
-      "package": "com.rayvidal.biblucacaversiculo"
+      "package": "com.rayvidal.biblucacaversiculo",
+      "adaptiveIcon": {
+        "foregroundImage": "./src/assets/adaptive-icon.png",
+        "backgroundColor": "#FFFFFF"
+      }
     },
     "plugins": [
       "expo-secure-store"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "db8293d3-5296-4d7b-8043-cad383c12120"
+      }
+    },
+    "owner": "rayvidal"
   }
 }
