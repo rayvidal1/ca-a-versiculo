@@ -1,0 +1,35 @@
+diff --git a/node_modules/expo-modules-core/android/CMakeLists.txt b/node_modules/expo-modules-core/android/CMakeLists.txt
+--- a/node_modules/expo-modules-core/android/CMakeLists.txt
++++ b/node_modules/expo-modules-core/android/CMakeLists.txt
+@@ -119,6 +119,7 @@
+         ${folly_FLAGS}
+ )
+ 
++find_library(c++_shared_LIBRARY c++_shared)
+ target_link_libraries(
+   ${PACKAGE_NAME}
+   CommonSettings
+@@ -128,6 +129,7 @@
+   android
+   ${JSEXECUTOR_LIB}
+   ${NEW_ARCHITECTURE_DEPENDENCIES}
++  ${c++_shared_LIBRARY}
+ )
+ 
+ 
+diff --git a/node_modules/expo-modules-core/android/src/fabric/CMakeLists.txt b/node_modules/expo-modules-core/android/src/fabric/CMakeLists.txt
+--- a/node_modules/expo-modules-core/android/src/fabric/CMakeLists.txt
++++ b/node_modules/expo-modules-core/android/src/fabric/CMakeLists.txt
+@@ -33,10 +33,12 @@
+   "${INCLUDE_fabricjni}/react/fabric"
+ )
+ 
++find_library(c++_shared_LIBRARY c++_shared)
+ target_link_libraries(fabric
+   CommonSettings
+   fbjni::fbjni
+   ReactAndroid::jsi
++  ${c++_shared_LIBRARY}
+ )
+ 
+ target_link_libraries(fabric ReactAndroid::reactnative)

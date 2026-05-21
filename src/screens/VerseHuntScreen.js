@@ -5,6 +5,7 @@ const BG = require('../assets/fundo.png');
 
 import ConfettiCannon from 'react-native-confetti-cannon';
 
+import FinalRevealAdBanner from '../components/FinalRevealAdBanner.js';
 import PhraseToast from '../components/PhraseToast.js';
 import VerseCard from '../components/VerseCard.js';
 import WordSearchGrid from '../components/WordSearchGrid.js';
@@ -241,6 +242,7 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
             highlightNovo={false}
             hideActionButton
           />
+          <FinalRevealAdBanner />
           <Animated.View style={{ opacity: buttonPulse }}>
             <TouchableOpacity
               style={styles.completionNextButton}

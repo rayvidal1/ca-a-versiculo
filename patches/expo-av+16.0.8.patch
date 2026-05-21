@@ -1,0 +1,18 @@
+diff --git a/node_modules/expo-av/android/CMakeLists.txt b/node_modules/expo-av/android/CMakeLists.txt
+--- a/node_modules/expo-av/android/CMakeLists.txt
++++ b/node_modules/expo-av/android/CMakeLists.txt
+@@ -38,12 +38,14 @@
+ 
+ # linking
+ 
++find_library(c++_shared_LIBRARY c++_shared)
+ target_link_libraries(
+         ${PACKAGE_NAME}
+         ${LOG_LIB}
+         fbjni::fbjni
+         ReactAndroid::jsi
+         android
++        ${c++_shared_LIBRARY}
+ )
+ if (ReactAndroid_VERSION_MINOR GREATER_EQUAL 76)
+   target_link_libraries(
