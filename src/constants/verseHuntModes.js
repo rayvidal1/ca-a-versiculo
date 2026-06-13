@@ -100,12 +100,12 @@ export const verseHuntModes = [
   {
     id: 'dificil',
     label: 'Difícil',
-    summary: '7x9 | 12-18 palavras | foco total',
+    summary: '7x9 | 8-12 palavras | foco total',
     gameOptions: {
       cols: 7,
       rows: 9,
-      minTargetWordCount: 12,
-      maxTargetWordCount: 18,
+      minTargetWordCount: 8,
+      maxTargetWordCount: 12,
       minWordLength: 4,
       minFallbackWordLength: 2,
       maxWordLength: 11,

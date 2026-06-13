@@ -156,7 +156,12 @@ export function useVerseHuntGame(verse, options = {}, { onComplete } = {}) {
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
   const optionsKey = getOptionsKey(options);
-  const [setup, setSetup] = useState(() => createGameState(verse, options));
+
+  const [setup, setSetup] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [retryKey, setRetryKey] = useState(0);
+
   const [selectedCells, setSelectedCells] = useState([]);
   const [selectionInvalid, setSelectionInvalid] = useState(false);
   const [foundPlacements, setFoundPlacements] = useState([]);
@@ -173,6 +178,7 @@ export function useVerseHuntGame(verse, options = {}, { onComplete } = {}) {
     return map;
   }, {});
   const isComplete =
+    setup != null &&
     foundPlacements.length === setup.gridState.placements.length &&
     setup.gridState.placements.length > 0;
 
@@ -181,14 +187,42 @@ export function useVerseHuntGame(verse, options = {}, { onComplete } = {}) {
     setSelectedCells(nextSelection);
   }
 
+  // Geração assíncrona: cede o controle para o React renderizar o loading
+  // antes de iniciar o processamento síncrono pesado.
   useEffect(() => {
-    setSetup(createGameState(verse, options));
-    updateSelectedCells([]);
+    let cancelled = false;
+
+    setIsLoading(true);
+    setError(null);
+    selectedCellsRef.current = [];
+    setSelectedCells([]);
     setFoundPlacements([]);
     setLastFoundWord(null);
     setSelectionInvalid(false);
     selectionAnchorRef.current = null;
-  }, [verse.id, verse.reference, verse.text, optionsKey]);
+
+    const timeoutId = setTimeout(() => {
+      if (cancelled) return;
+      try {
+        const gameState = createGameState(verse, options);
+        if (!cancelled) {
+          setSetup(gameState);
+          setIsLoading(false);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err);
+          setIsLoading(false);
+        }
+      }
+    }, 0);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [verse.id, verse.reference, verse.text, optionsKey, retryKey]);
 
   useEffect(() => {
     if (!isComplete) {
@@ -216,7 +250,7 @@ export function useVerseHuntGame(verse, options = {}, { onComplete } = {}) {
   }, [celebration, isComplete]);
 
   function commitSelection(selection) {
-    if (selection.length < 2) {
+    if (selection.length < 2 || !setup) {
       updateSelectedCells([]);
       return;
     }
@@ -264,8 +298,6 @@ export function useVerseHuntGame(verse, options = {}, { onComplete } = {}) {
       includeDiagonal: options.includeDiagonal ?? false,
     });
 
-    // Só atualiza a ref — não chama setState para não disparar re-render
-    // a cada evento de toque (selectedCells/selectionInvalid não são usados na tela)
     if (nextSelection === null) {
       selectedCellsRef.current = [selectionAnchorRef.current];
     } else {
@@ -296,22 +328,27 @@ export function useVerseHuntGame(verse, options = {}, { onComplete } = {}) {
   }
 
   async function shareVerse() {
+    if (!setup) return false;
     try {
       await Share.share({
         message: `${setup.verse.reference}\n${setup.verse.text}`,
       });
-    } catch (error) {
+    } catch (err) {
       return false;
     }
 
     return true;
   }
 
+  function retry() {
+    setRetryKey((k) => k + 1);
+  }
+
   return {
-    verse: setup.verse,
-    grid: setup.gridState.grid,
-    placements: setup.gridState.placements,
-    wordStyleMap: setup.wordStyleMap,
+    verse: setup?.verse ?? { reference: '', tokens: [], text: '' },
+    grid: setup?.gridState.grid ?? [],
+    placements: setup?.gridState.placements ?? [],
+    wordStyleMap: setup?.wordStyleMap ?? {},
     selectedCells,
     selectedCellMap,
     selectionInvalid,
@@ -321,6 +358,9 @@ export function useVerseHuntGame(verse, options = {}, { onComplete } = {}) {
     isComplete,
     celebration,
     lastFoundWord,
+    isLoading,
+    error,
+    retry,
     addFoundPlacement,
     handleSelectionStart,
     handleSelectionMove,

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Easing, ImageBackground, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Animated, Easing, ImageBackground, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 
 const BG = require('../assets/fundo.png');
 
@@ -82,6 +82,9 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
     foundWordSet,
     lastFoundWord,
     isComplete,
+    isLoading,
+    error,
+    retry,
     addFoundPlacement,
     handleSelectionStart,
     handleSelectionMove,
@@ -186,74 +189,106 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
     );
   }
 
+  function handleSkipVerse() {
+    setCurrentVerse((current) => getRandomVerse(current.id, activeGameOptions));
+  }
+
   return (
     <ImageBackground source={BG} style={styles.screen} resizeMode="cover">
-      <View style={styles.content}>
-        <Animated.View style={[styles.verseCardWrapper, { opacity: originalCardOpacity }]}>
-          <VerseCard
-            reference={verse.reference}
-            tokens={verse.tokens}
-            foundWordSet={foundWordSet}
-            wordStyleMap={wordStyleMap}
-            lastFoundWord={lastFoundWord}
-            hintWord={guideActive ? placements[0]?.word : hintWord}
-            onHint={handleHint}
-            onNextVerse={handleNextVerse}
-            isComplete={isComplete}
-            highlightNovo={isTutorial && tutorialRound === 2}
-          />
-        </Animated.View>
-        <Animated.View style={[styles.boardArea, { opacity: boardOpacity, transform: [{ translateY: boardTranslateY }] }]}>
-          <View style={styles.boardCard}>
-            <WordSearchGrid
-              grid={grid}
-              foundPlacements={foundPlacements}
-              hintCell={guideHintCell ?? hintCell}
-              guidePlacement={guidePlacement}
-              onGuideComplete={(placement) => {
-                addFoundPlacement(placement);
-              }}
-              includeDiagonal={activeGameOptions.includeDiagonal ?? false}
-              onSelectionStart={handleSelectionStart}
-              onSelectionMove={handleSelectionMove}
-              onSelectionEnd={handleSelectionEnd}
-              disabled={isComplete}
-            />
+      {/* Conteúdo do jogo — oculto durante loading/erro */}
+      {!isLoading && !error && (
+        <>
+          <View style={styles.content}>
+            <Animated.View style={[styles.verseCardWrapper, { opacity: originalCardOpacity }]}>
+              <VerseCard
+                reference={verse.reference}
+                tokens={verse.tokens}
+                foundWordSet={foundWordSet}
+                wordStyleMap={wordStyleMap}
+                lastFoundWord={lastFoundWord}
+                hintWord={guideActive ? placements[0]?.word : hintWord}
+                onHint={handleHint}
+                onNextVerse={handleNextVerse}
+                isComplete={isComplete}
+                highlightNovo={isTutorial && tutorialRound === 2}
+              />
+            </Animated.View>
+            <Animated.View style={[styles.boardArea, { opacity: boardOpacity, transform: [{ translateY: boardTranslateY }] }]}>
+              <View style={styles.boardCard}>
+                <WordSearchGrid
+                  grid={grid}
+                  foundPlacements={foundPlacements}
+                  hintCell={guideHintCell ?? hintCell}
+                  guidePlacement={guidePlacement}
+                  onGuideComplete={(placement) => {
+                    addFoundPlacement(placement);
+                  }}
+                  includeDiagonal={activeGameOptions.includeDiagonal ?? false}
+                  onSelectionStart={handleSelectionStart}
+                  onSelectionMove={handleSelectionMove}
+                  onSelectionEnd={handleSelectionEnd}
+                  disabled={isComplete}
+                />
+              </View>
+            </Animated.View>
           </View>
-        </Animated.View>
-      </View>
-      {isComplete && (
-        <Animated.View
-          style={[styles.completionOverlay, {
-            opacity: overlayFadeAnim,
-            transform: [{ translateY: overlayTranslateY }],
-          }]}
-        >
-          <VerseCard
-            reference={verse.reference}
-            tokens={verse.tokens}
-            foundWordSet={foundWordSet}
-            wordStyleMap={wordStyleMap}
-            lastFoundWord={lastFoundWord}
-            hintWord={null}
-            onHint={null}
-            onNextVerse={handleNextVerse}
-            isComplete={isComplete}
-            highlightNovo={false}
-            hideActionButton
-          />
-          <FinalRevealAdBanner />
-          <Animated.View style={{ opacity: buttonPulse }}>
-            <TouchableOpacity
-              style={styles.completionNextButton}
-              onPress={handleNextVerse}
-              activeOpacity={0.8}
+          {isComplete && (
+            <Animated.View
+              style={[styles.completionOverlay, {
+                opacity: overlayFadeAnim,
+                transform: [{ translateY: overlayTranslateY }],
+              }]}
             >
-              <Text style={styles.completionNextButtonText}>Novo versículo</Text>
-            </TouchableOpacity>
-          </Animated.View>
-        </Animated.View>
+              <VerseCard
+                reference={verse.reference}
+                tokens={verse.tokens}
+                foundWordSet={foundWordSet}
+                wordStyleMap={wordStyleMap}
+                lastFoundWord={lastFoundWord}
+                hintWord={null}
+                onHint={null}
+                onNextVerse={handleNextVerse}
+                isComplete={isComplete}
+                highlightNovo={false}
+                hideActionButton
+              />
+              <FinalRevealAdBanner />
+              <Animated.View style={{ opacity: buttonPulse }}>
+                <TouchableOpacity
+                  style={styles.completionNextButton}
+                  onPress={handleNextVerse}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.completionNextButtonText}>Novo versículo</Text>
+                </TouchableOpacity>
+              </Animated.View>
+            </Animated.View>
+          )}
+          {activePhrase && (
+            <PhraseToast
+              key={activePhrase.text + foundPlacements.length}
+              phrase={activePhrase.text}
+              duration={activePhrase.duration}
+              onHide={() => setActivePhrase(null)}
+            />
+          )}
+          {isComplete && (
+            <View style={styles.confettiLayer}>
+              <ConfettiCannon
+                ref={confettiRef}
+                count={35}
+                origin={{ x: width / 2, y: -20 }}
+                colors={CONFETTI_COLORS}
+                autoStart={false}
+                fadeOut
+                fallSpeed={3000}
+              />
+            </View>
+          )}
+        </>
       )}
+
+      {/* Botão de voltar — sempre visível */}
       <View style={styles.topBar}>
         <TouchableOpacity
           style={styles.backButton}
@@ -263,25 +298,35 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
           <Text style={styles.backButtonIcon}>‹</Text>
         </TouchableOpacity>
       </View>
-      {activePhrase && (
-        <PhraseToast
-          key={activePhrase.text + foundPlacements.length}
-          phrase={activePhrase.text}
-          duration={activePhrase.duration}
-          onHide={() => setActivePhrase(null)}
-        />
+
+      {/* Overlay de carregamento */}
+      {isLoading && (
+        <View style={styles.stateOverlay}>
+          <ActivityIndicator size="large" color="rgba(255,255,255,0.9)" />
+          <Text style={styles.stateLabel}>Preparando grade…</Text>
+        </View>
       )}
-      {isComplete && (
-        <View style={styles.confettiLayer}>
-          <ConfettiCannon
-            ref={confettiRef}
-            count={35}
-            origin={{ x: width / 2, y: -20 }}
-            colors={CONFETTI_COLORS}
-            autoStart={false}
-            fadeOut
-            fallSpeed={3000}
-          />
+
+      {/* Overlay de erro com retry */}
+      {!isLoading && error && (
+        <View style={styles.stateOverlay}>
+          <Text style={styles.stateLabel}>Não foi possível{'\n'}gerar a grade</Text>
+          <View style={styles.errorButtons}>
+            <TouchableOpacity
+              style={styles.completionNextButton}
+              onPress={retry}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.completionNextButtonText}>Tentar novamente</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.completionNextButton, styles.ghostButton]}
+              onPress={handleSkipVerse}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.completionNextButtonText}>Outro versículo</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       )}
     </ImageBackground>
@@ -373,6 +418,33 @@ const styles = StyleSheet.create({
   },
   verseCardWrapper: {
     flex: 3,
+  },
+  stateOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 14,
+    paddingHorizontal: 32,
+    paddingBottom: 60,
+  },
+  stateLabel: {
+    color: 'rgba(255,255,255,0.92)',
+    fontSize: 17,
+    fontWeight: '700',
+    textAlign: 'center',
+    textShadowColor: 'rgba(0,0,0,0.45)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 6,
+    marginBottom: 6,
+  },
+  errorButtons: {
+    width: '100%',
+    gap: 10,
+  },
+  ghostButton: {
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    shadowOpacity: 0,
+    elevation: 0,
   },
 });
 

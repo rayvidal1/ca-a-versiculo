@@ -487,7 +487,7 @@ export function getCellKey(cell) {
 }
 
 export function generateWordSearchGrid(targetWords, options = {}) {
-  const maxAttempts = options.maxAttempts ?? 1200;
+  const maxAttempts = options.maxAttempts ?? 300;
   let lastError = null;
 
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {

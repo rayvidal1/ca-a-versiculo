@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "biblu-caca-versiculo",
+    "name": "caça palavra",
     "slug": "biblu-caca-versiculo",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -16,13 +16,23 @@
     ],
     "android": {
       "package": "com.rayvidal.biblucacaversiculo",
+      "icon": "./src/assets/app-icon.png",
       "adaptiveIcon": {
         "foregroundImage": "./src/assets/adaptive-icon.png",
         "backgroundColor": "#FFFFFF"
       }
     },
     "plugins": [
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./src/assets/splash.png",
+          "imageWidth": 320,
+          "resizeMode": "cover",
+          "backgroundColor": "#FFFFFF"
+        }
+      ]
     ],
     "extra": {
       "eas": {
