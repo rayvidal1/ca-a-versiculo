@@ -14,6 +14,16 @@ module.exports = {
     plugins: [
       ...expo.plugins,
       [
+        'expo-build-properties',
+        {
+          android: {
+            packagingOptions: {
+              pickFirst: ['**/libc++_shared.so'],
+            },
+          },
+        },
+      ],
+      [
         'react-native-google-mobile-ads',
         {
           androidAppId,
