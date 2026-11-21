@@ -209,15 +209,31 @@ test('short words never become objectives, even with permissive options or spars
   assert.ok(empty.error, 'must not expose a zero-objective game');
 });
 
-test('verse source excludes ineligible verses and its fallback only returns valid candidates', () => {
-  const valid = { id: 'valid', text: 'luz paz' };
-  const h = harness({ verseData: [{ id: 'short', text: 'eu tu ti' }, valid] });
-  const { getInitialVerse, getRandomVerse } = h.load('src/services/verseSource.js');
-  const options = { minWordLength: 1, minFallbackWordLength: 1, targetWordCount: 5 };
-  assert.equal(getInitialVerse(options).id, valid.id);
-  assert.equal(getRandomVerse(valid.id, options).id, valid.id);
-  const empty = harness({ verseData: [{ id: 'short', text: 'eu tu ti' }] }).load('src/services/verseSource.js');
-  assert.throws(() => empty.getInitialVerse(options), /elegivel/);
+test('catalog selector only uses indexed verses and safely reuses an exhausted pool', () => {
+  const h = harness();
+  const { createCatalogSelector, getCatalogKey, getCatalogProfiles } = h.load('src/utils/verseCatalog.js');
+  const options = getCatalogProfiles()[0].options;
+  const catalog = { books: [['test', 'Teste']], verses: [[0, 1, 1, 'eu tu ti'], [0, 1, 2, 'luz paz']] };
+  const selector = createCatalogSelector(catalog, { profiles: { test: { key: getCatalogKey(options), pool: 0 } }, pools: [[1]] });
+  assert.equal(selector.getInitialVerse(options).id, 'test-1-2');
+  assert.equal(selector.getRandomVerse('test-1-2', options).id, 'test-1-2');
+  assert.throws(() => selector.getInitialVerse({ rows: 1 }), /indice/);
+});
+
+test('production verse source loads the offline BPM catalogue and preserves history', async () => {
+  const h = harness();
+  const source = h.load('src/services/verseSource.js');
+  const { getCatalogProfiles } = h.load('src/utils/verseCatalog.js');
+  await source.initVerseHistory();
+  const seen = new Set();
+  for (const profile of getCatalogProfiles()) {
+    const first = source.getInitialVerse(profile.options);
+    const next = source.getRandomVerse(first.id, profile.options);
+    for (const verse of [first, next]) {
+      assert.ok(!seen.has(verse.id)); seen.add(verse.id);
+      assert.ok(verse.reference && verse.text && !/^pv-10-(1[3-9]|2[01])$/.test(verse.id));
+    }
+  }
 });
 
 test('manual and guide completion count once and automatically advance after 1300ms', () => {

@@ -110,3 +110,23 @@ O plugin `react-native-google-mobile-ads` está em `app.config.js` e injeta o `A
 - NDK 27.1.12297006
 - Android compileSdk 36 / targetSdk 36
 - New Architecture (Fabric + TurboModules)
+
+
+## Catalogo BPM offline
+
+A fonte de jogo e src/data/bpm/catalog.json, com indices pre-calculados em eligibility.json e origem, hashes e aviso Public Domain em provenance.json. Os nove suplementos TB 1917 de Proverbios 10:13-21 sao excluidos; textos e referencias originais sao preservados. src/data/verses.json fica apenas como fixture dos casos antigos de regressao.
+
+Geracao (Node.js 22+, sem rede):
+
+    node scripts/generate-verses.js
+    node scripts/generate-verses.js "C:/caminho/biblu/src/data/bible/pt/books"
+
+Tambem aceita BPM_BOOKS_DIR. O padrao procura o projeto biblu ao lado deste projeto. O gerador somente le o Biblu e escreve em src/data/bpm. Regerar ao alterar regras de palavras, grades, modos ou tutorial; os testes detectam indices desatualizados.
+
+Mantem o limite de 28 palavras por versiculo e exige candidatos suficientes para o minimo de cada perfil. Uma grade testemunha e gerada antes de indexar. Perfis identicos compartilham o mesmo pool. Em execucao, somente o versiculo sorteado e processado; nao ha HTTP, download, ordenacao nem varredura completa da Biblia por rodada. O historico antirrepeticao usa AsyncStorage e retencao limitada a 512 IDs.
+
+Validacao completa (inclui todas as entradas indexadas, pode levar cerca de 90 segundos):
+
+    node --test tests/game-regressions.test.cjs tests/bpm-catalog.test.cjs
+
+A comparacao byte a byte da fonte exige acesso local ao Biblu; os demais testes funcionam com os dados embarcados.
