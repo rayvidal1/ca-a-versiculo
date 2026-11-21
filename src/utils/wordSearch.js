@@ -310,6 +310,14 @@ function canWordFitDirectionGroup(wordLength, rows, cols, directionId) {
   }
 }
 
+export function canWordFitGrid(wordLength, options = {}) {
+  return normalizeDirectionDistribution(options.directionDistribution, options).some(
+    ({ id }) => canWordFitDirectionGroup(
+      wordLength, resolveRowCount(options), resolveColCount(options), id
+    )
+  );
+}
+
 function getTheoreticalFitCount(wordLength, rows, cols, directionId) {
   switch (directionId) {
     case 'right':

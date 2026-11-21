@@ -170,6 +170,7 @@ export function useVerseHuntGame(verse, options = {}, { onComplete } = {}) {
   const playSuccess = useSoundEffect(require('../assets/sounds/sucess.mp3'), 0.11);
   const selectionAnchorRef = useRef(null);
   const selectedCellsRef = useRef([]);
+  const completionNotifiedRef = useRef(false);
 
   const foundWordSet = new Set(foundPlacements.map((placement) => placement.word));
   const foundCellMap = buildCellMap(foundPlacements);
@@ -193,6 +194,8 @@ export function useVerseHuntGame(verse, options = {}, { onComplete } = {}) {
     let cancelled = false;
 
     setIsLoading(true);
+    setSetup(null);
+    completionNotifiedRef.current = false;
     setError(null);
     selectedCellsRef.current = [];
     setSelectedCells([]);
@@ -223,6 +226,19 @@ export function useVerseHuntGame(verse, options = {}, { onComplete } = {}) {
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [verse.id, verse.reference, verse.text, optionsKey, retryKey]);
+
+  useEffect(() => {
+    if (isLoading || !isComplete || completionNotifiedRef.current) return;
+    completionNotifiedRef.current = true;
+    onCompleteRef.current?.();
+  }, [isLoading, isComplete]);
+
+  useEffect(() => {
+    const latest = foundPlacements[foundPlacements.length - 1];
+    if (!latest) return;
+    setLastFoundWord(latest.word);
+    playSuccess();
+  }, [foundPlacements]);
 
   useEffect(() => {
     if (!isComplete) {
@@ -262,18 +278,7 @@ export function useVerseHuntGame(verse, options = {}, { onComplete } = {}) {
     );
 
     if (matchedPlacement) {
-      setFoundPlacements((currentPlacements) => {
-        if (currentPlacements.some((p) => p.word === matchedPlacement.word)) {
-          return currentPlacements;
-        }
-        setLastFoundWord(matchedPlacement.word);
-        playSuccess();
-        const next = [...currentPlacements, matchedPlacement];
-        if (next.length === setup.gridState.placements.length) {
-          onCompleteRef.current?.();
-        }
-        return next;
-      });
+      addFoundPlacement(matchedPlacement);
     }
 
     updateSelectedCells([]);
@@ -319,10 +324,9 @@ export function useVerseHuntGame(verse, options = {}, { onComplete } = {}) {
   }
 
   function addFoundPlacement(placement) {
+    if (isLoading || !setup?.gridState.placements.includes(placement)) return;
     setFoundPlacements((current) => {
       if (current.some((p) => p.word === placement.word)) return current;
-      setLastFoundWord(placement.word);
-      playSuccess();
       return [...current, placement];
     });
   }

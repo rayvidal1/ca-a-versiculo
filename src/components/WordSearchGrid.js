@@ -160,7 +160,7 @@ function renderHintCircle(hintCell, metrics, hintPulse) {
   const stride = metrics.cellSize + metrics.gap;
   const cx = metrics.horizontalPadding + hintCell.col * stride + metrics.cellSize / 2;
   const cy = metrics.horizontalPadding + hintCell.row * stride + metrics.cellSize / 2;
-  const r = metrics.cellSize * 0.54;
+  const r = metrics.cellSize * 0.43;
   return (
     <Animated.View
       key="hint-circle"
@@ -169,9 +169,13 @@ function renderHintCircle(hintCell, metrics, hintPulse) {
         width: r * 2,
         height: r * 2,
         borderRadius: r,
-        borderWidth: 3,
-        borderColor: '#FF1744',
-        backgroundColor: 'rgba(255, 23, 68, 0.15)',
+        borderWidth: 1.5,
+        borderColor: 'rgba(45, 106, 87, 0.6)',
+        backgroundColor: 'rgba(45, 106, 87, 0.08)',
+        shadowColor: '#2D6A57',
+        shadowOpacity: 0.2,
+        shadowRadius: 6,
+        shadowOffset: { width: 0, height: 0 },
         left: cx - r,
         top: cy - r,
         alignItems: 'center',
@@ -179,7 +183,7 @@ function renderHintCircle(hintCell, metrics, hintPulse) {
         transform: [{ scale: hintPulse }],
       }}
     >
-      <Text style={{ fontSize: metrics.letterSize, fontWeight: '900', color: '#FF1744' }}>
+      <Text style={{ fontSize: metrics.letterSize, fontWeight: '700', color: '#2D6A57' }}>
         {hintCell.letter}
       </Text>
     </Animated.View>
@@ -192,6 +196,8 @@ function WordSearchGrid({
   hintCell = null,
   guidePlacement = null,
   onGuideComplete,
+  showOnboarding = false,
+  onInteractionStart,
   includeDiagonal = false,
   letterShadow = false,
   onSelectionStart,
@@ -222,8 +228,8 @@ function WordSearchGrid({
     hintPulse.setValue(1);
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(hintPulse, { toValue: 1.5, duration: 500, useNativeDriver: true }),
-        Animated.timing(hintPulse, { toValue: 1, duration: 500, useNativeDriver: true }),
+        Animated.timing(hintPulse, { toValue: 1.08, duration: 800, useNativeDriver: true }),
+        Animated.timing(hintPulse, { toValue: 1, duration: 800, useNativeDriver: true }),
       ])
     );
     loop.start();
@@ -297,6 +303,7 @@ function WordSearchGrid({
   // sem necessidade de measureInWindow ou coordenadas absolutas.
   function handleTouchStart(nativeEvent, callback) {
     if (disabled) return;
+    onInteractionStart?.();
     const m = metricsRef.current;
     const cell = getCellAtLocation(
       nativeEvent.locationX,
@@ -386,6 +393,13 @@ function WordSearchGrid({
 
   return (
     <View style={styles.wrapper}>
+      {showOnboarding && (
+        <View pointerEvents="none" style={styles.onboardingOverlay}>
+          <View style={styles.onboardingInstruction}>
+            <Text style={styles.onboardingText}>Arraste da primeira até a última letra</Text>
+          </View>
+        </View>
+      )}
       <View
         style={[
           styles.gridFrame,
@@ -480,6 +494,8 @@ export default memo(WordSearchGrid, (prev, next) => {
     prev.foundPlacements === next.foundPlacements &&
     prev.hintCell === next.hintCell &&
     prev.guidePlacement === next.guidePlacement &&
+    prev.showOnboarding === next.showOnboarding &&
+    prev.onInteractionStart === next.onInteractionStart &&
     prev.disabled === next.disabled &&
     prev.includeDiagonal === next.includeDiagonal &&
     prev.letterShadow === next.letterShadow &&
@@ -496,6 +512,30 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  onboardingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(45, 106, 87, 0.035)',
+    borderRadius: 22,
+  },
+  onboardingInstruction: {
+    position: 'absolute',
+    bottom: '100%',
+    marginBottom: 12,
+    alignSelf: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.96)',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(45, 106, 87, 0.12)',
+  },
+  onboardingText: {
+    color: '#2D6A57',
+    fontSize: 12,
+    lineHeight: 17,
+    textAlign: 'center',
+    fontWeight: '500',
   },
   gridFrame: {
     borderRadius: 22,

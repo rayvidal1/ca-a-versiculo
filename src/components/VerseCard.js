@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { palette, shadow } from '../theme/palette.js';
 
@@ -43,43 +43,7 @@ export default function VerseCard({
   hintWord,
   onHint,
   isComplete,
-  onNextVerse,
-  highlightNovo,
-  hideActionButton,
 }) {
-  const ringScale = useRef(new Animated.Value(1)).current;
-  const ringOpacity = useRef(new Animated.Value(0)).current;
-
-  const completePulse = useRef(new Animated.Value(1)).current;
-
-  useEffect(() => {
-    if (!highlightNovo) return;
-    ringOpacity.setValue(1);
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(ringScale, { toValue: 2.4, duration: 750, easing: Easing.out(Easing.ease), useNativeDriver: true }),
-        Animated.timing(ringOpacity, { toValue: 0, duration: 200, useNativeDriver: true }),
-        Animated.delay(400),
-        Animated.timing(ringScale, { toValue: 1, duration: 0, useNativeDriver: true }),
-        Animated.timing(ringOpacity, { toValue: 1, duration: 0, useNativeDriver: true }),
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [highlightNovo]);
-
-  useEffect(() => {
-    if (!isComplete) { completePulse.setValue(1); return; }
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(completePulse, { toValue: 1.06, duration: 900, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-        Animated.timing(completePulse, { toValue: 1, duration: 900, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [isComplete]);
-
   return (
     <View style={styles.cardShell}>
       <View style={styles.card}>
@@ -92,19 +56,6 @@ export default function VerseCard({
                 <Pressable style={styles.hintButton} onPress={onHint}>
                   <Text style={styles.hintButtonText}>📖</Text>
                 </Pressable>
-              )}
-              {!hideActionButton && (
-                <Animated.View style={{ transform: [{ scale: isComplete && !highlightNovo ? completePulse : 1 }] }}>
-                  {highlightNovo && (
-                    <Animated.View pointerEvents="none" style={[styles.novoRing, {
-                      opacity: ringOpacity,
-                      transform: [{ scale: ringScale }],
-                    }]} />
-                  )}
-                  <Pressable style={[styles.actionButton, highlightNovo && styles.actionButtonHighlight, isComplete && !highlightNovo && styles.actionButtonComplete]} onPress={onNextVerse}>
-                    <Text style={styles.actionButtonText}>Novo</Text>
-                  </Pressable>
-                </Animated.View>
               )}
             </View>
           </View>
@@ -202,38 +153,6 @@ const styles = StyleSheet.create({
   },
   hintButtonText: {
     fontSize: 16,
-  },
-  actionButton: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 999,
-    backgroundColor: 'rgba(228, 241, 233, 0.72)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.34)',
-  },
-  actionButtonHighlight: {
-    backgroundColor: 'rgba(45, 106, 87, 0.18)',
-    borderColor: palette.primary,
-    borderWidth: 1.5,
-  },
-  actionButtonComplete: {
-    backgroundColor: 'rgba(45, 106, 87, 0.14)',
-    borderColor: 'rgba(60, 140, 220, 0.7)',
-    borderWidth: 1.5,
-  },
-  novoRing: {
-    position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
-    borderRadius: 999,
-    borderWidth: 2,
-    borderColor: palette.primary,
-  },
-  actionButtonText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: palette.primary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
   },
   verse: {
     fontSize: 18,

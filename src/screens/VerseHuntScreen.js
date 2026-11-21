@@ -49,7 +49,12 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
   const playGameStart = useSoundEffect(require('../assets/sounds/game-start.wav'), 0.55);
 
   const selectedMode = useMemo(() => getVerseHuntModeConfig(modeId), [modeId]);
-  const activeGameOptions = isTutorial ? getTutorialOptions(tutorialRound) : selectedMode.gameOptions;
+  // Keep the current round stable when completion advances the tutorial counter.
+  const [round, setRound] = useState(() => ({
+    options: isTutorial ? getTutorialOptions(tutorialRound) : selectedMode.gameOptions,
+    isFirst: isTutorial && tutorialRound === 1,
+  }));
+  const activeGameOptions = round.options;
   const hasModeInitializedRef = useRef(false);
   const [currentVerse, setCurrentVerse] = useState(() =>
     getInitialVerse(isTutorial ? getTutorialOptions(tutorialRound) : getVerseHuntModeConfig(modeId).gameOptions)
@@ -60,6 +65,7 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
       return;
     }
 
+    setRound({ options: selectedMode.gameOptions, isFirst: false });
     setCurrentVerse((current) =>
       getRandomVerse(current?.id, selectedMode.gameOptions)
     );
@@ -68,10 +74,11 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
   const completionAnim = useRef(new Animated.Value(0)).current;
   const overlayFadeAnim = useRef(new Animated.Value(0)).current;
   const boardAnim = useRef(new Animated.Value(0)).current;
-  const buttonPulse = useRef(new Animated.Value(1)).current;
+  const nextVerseRef = useRef(null);
+  const [onboardingDismissed, setOnboardingDismissed] = useState(false);
 
   const [hintWord, setHintWord] = useState(null);
-  const isFirstRound = isTutorial && tutorialRound === 1;
+  const isFirstRound = round.isFirst;
 
   const {
     verse,
@@ -91,13 +98,15 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
     handleSelectionEnd,
   } = useVerseHuntGame(currentVerse, activeGameOptions, {
     onComplete: () => {
+      onVersePlayed?.();
       playVictory();
-      setActivePhrase({ text: pickRandom(END_PHRASES), duration: 4000 });
+      setActivePhrase({ text: pickRandom(END_PHRASES), duration: 1200 });
     },
   });
 
   const guideActive = isFirstRound && !isComplete && placements.length > 0;
   const guidePlacement = guideActive ? (placements.find(p => !foundWordSet.has(p.word)) ?? null) : null;
+  const showOnboarding = guideActive && !onboardingDismissed;
   const guideHintCell = guidePlacement ? (grid[guidePlacement.cells[0]?.row]?.[guidePlacement.cells[0]?.col] ?? null) : null;
 
   useEffect(() => { setHintWord(null); }, [currentVerse.id]);
@@ -127,32 +136,24 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
       Animated.parallel([
         Animated.timing(completionAnim, {
           toValue: 1,
-          duration: 900,
+          duration: 280,
           easing: Easing.out(Easing.cubic),
           useNativeDriver: true,
         }),
         Animated.timing(overlayFadeAnim, {
           toValue: 1,
-          duration: 2200,
+          duration: 220,
           easing: Easing.out(Easing.quad),
           useNativeDriver: true,
         }),
         Animated.timing(boardAnim, {
           toValue: 1,
-          duration: 1120,
+          duration: 280,
           easing: Easing.out(Easing.quad),
           useNativeDriver: true,
         }),
-      ]).start(() => {
-        const loop = Animated.loop(
-          Animated.sequence([
-            Animated.timing(buttonPulse, { toValue: 0.6, duration: 900, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-            Animated.timing(buttonPulse, { toValue: 1, duration: 900, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-          ])
-        );
-        loop.start();
-      });
-    }, 280);
+      ]).start();
+    }, 0);
     return () => clearTimeout(timeout);
   }, [isComplete]);
 
@@ -162,7 +163,7 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
     completionAnim.setValue(0);
     overlayFadeAnim.setValue(0);
     boardAnim.setValue(0);
-    buttonPulse.setValue(1);
+    setActivePhrase(null);
   }, [currentVerse.id]);
 
   // Frase na metade do desafio
@@ -179,22 +180,30 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
   const boardOpacity = boardAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 0] });
   const boardTranslateY = boardAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -70] });
   const originalCardOpacity = completionAnim.interpolate({ inputRange: [0, 0.3], outputRange: [1, 0], extrapolate: 'clamp' });
-  const overlayTranslateY = completionAnim.interpolate({ inputRange: [0, 1], outputRange: [-300, 0], extrapolate: 'clamp' });
+  const overlayTranslateY = completionAnim.interpolate({ inputRange: [0, 1], outputRange: [-24, 0], extrapolate: 'clamp' });
 
   function handleNextVerse() {
     playGameStart();
-    onVersePlayed?.();
+    const nextOptions = isTutorial ? getTutorialOptions(tutorialRound) : selectedMode.gameOptions;
+    setRound({ options: nextOptions, isFirst: isTutorial && tutorialRound === 1 });
     setCurrentVerse((current) =>
-      getRandomVerse(current.id, activeGameOptions)
+      getRandomVerse(current.id, nextOptions)
     );
   }
+
+  nextVerseRef.current = handleNextVerse;
+  useEffect(() => {
+    if (!isComplete || isLoading || error) return;
+    const timer = setTimeout(() => nextVerseRef.current?.(), 1300);
+    return () => clearTimeout(timer);
+  }, [isComplete, isLoading, error, currentVerse.id]);
 
   function handleSkipVerse() {
     setCurrentVerse((current) => getRandomVerse(current.id, activeGameOptions));
   }
 
   return (
-    <ImageBackground source={BG} style={styles.screen} resizeMode="cover">
+    <ImageBackground source={BG} style={styles.screen} resizeMode="cover" onTouchStart={() => setOnboardingDismissed(true)}>
       {/* Conteúdo do jogo — oculto durante loading/erro */}
       {!isLoading && !error && (
         <>
@@ -208,9 +217,7 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
                 lastFoundWord={lastFoundWord}
                 hintWord={guideActive ? placements[0]?.word : hintWord}
                 onHint={handleHint}
-                onNextVerse={handleNextVerse}
                 isComplete={isComplete}
-                highlightNovo={isTutorial && tutorialRound === 2}
               />
             </Animated.View>
             <Animated.View style={[styles.boardArea, { opacity: boardOpacity, transform: [{ translateY: boardTranslateY }] }]}>
@@ -218,7 +225,9 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
                 <WordSearchGrid
                   grid={grid}
                   foundPlacements={foundPlacements}
-                  hintCell={guideHintCell ?? hintCell}
+                  hintCell={(showOnboarding ? guideHintCell : null) ?? hintCell}
+                  showOnboarding={showOnboarding}
+                  onInteractionStart={() => setOnboardingDismissed(true)}
                   guidePlacement={guidePlacement}
                   onGuideComplete={(placement) => {
                     addFoundPlacement(placement);
@@ -247,21 +256,9 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
                 lastFoundWord={lastFoundWord}
                 hintWord={null}
                 onHint={null}
-                onNextVerse={handleNextVerse}
                 isComplete={isComplete}
-                highlightNovo={false}
-                hideActionButton
               />
               <FinalRevealAdBanner />
-              <Animated.View style={{ opacity: buttonPulse }}>
-                <TouchableOpacity
-                  style={styles.completionNextButton}
-                  onPress={handleNextVerse}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.completionNextButtonText}>Novo versículo</Text>
-                </TouchableOpacity>
-              </Animated.View>
             </Animated.View>
           )}
           {activePhrase && (

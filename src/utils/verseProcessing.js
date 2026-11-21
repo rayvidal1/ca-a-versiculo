@@ -1,4 +1,5 @@
 import { accentedUpperCase, tokenizeVerse } from './text.js';
+import { canWordFitGrid } from './wordSearch.js';
 
 const STOP_WORDS = new Set([
   'A',
@@ -29,7 +30,7 @@ function scoreCandidate(token, index) {
   return token.normalized.length * 10 + uniqueLetters - index * 0.01;
 }
 
-function collectCandidates(text, minWordLength, maxWordLength) {
+function collectCandidates(text, minWordLength, maxWordLength, options) {
   const seen = new Set();
 
   return tokenizeVerse(text)
@@ -39,6 +40,7 @@ function collectCandidates(text, minWordLength, maxWordLength) {
       return (
         token.normalized.length >= minWordLength &&
         token.normalized.length <= maxWordLength &&
+        canWordFitGrid(accentedUpperCase(token.text).length, options) &&
         !STOP_WORDS.has(token.normalized)
       );
     })
@@ -93,7 +95,7 @@ export function selectTargetWords(text, options = {}) {
     currentMinWordLength >= fallbackMinWordLength;
     currentMinWordLength -= 1
   ) {
-    candidates = collectCandidates(text, currentMinWordLength, maxWordLength);
+    candidates = collectCandidates(text, currentMinWordLength, maxWordLength, options);
 
     if (
       candidates.length >= minimumDesiredCount ||
@@ -139,6 +141,7 @@ export function processVerseForHunt(verse, options = {}) {
   );
   const maxWordLength = options.maxWordLength ?? (maxGridDimension > 0 ? maxGridDimension : 10);
   const targetWords = selectTargetWords(verse.text, {
+    ...options,
     targetWordCount: options.targetWordCount ?? verse.targetWordCount ?? 3,
     minTargetWordCount: options.minTargetWordCount,
     maxTargetWordCount: options.maxTargetWordCount,
