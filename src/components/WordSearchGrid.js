@@ -3,6 +3,8 @@ import { Animated, Easing, StyleSheet, Text, View, useWindowDimensions } from 'r
 
 import { useSoundEffect } from '../hooks/useSoundEffect.js';
 
+import { projectGesture, resolveGestureDirection } from '../utils/gridGesture.js';
+
 import { palette } from '../theme/palette.js';
 
 function resolveGridMetrics(width, rowCount, colCount, maxHeight) {
@@ -79,82 +81,25 @@ function getCellAtLocation(locationX, locationY, metrics, grid, rowCount, colCou
 
   if (row < 0 || row >= rowCount || col < 0 || col >= colCount) return null;
 
-  // Rejeita se o toque caiu no gap entre células
-  if (relX - col * stride > metrics.cellSize) return null;
-  if (relY - row * stride > metrics.cellSize) return null;
 
   return grid[row]?.[col] ?? null;
 }
 
-// Quantiza deslocamento (dx, dy) em uma das 8 direções canônicas.
-// Usa limiares tan(22.5°) ≈ 0.4142 e tan(67.5°) ≈ 2.4142 para divisão natural.
-function quantizeDirection(dx, dy, includeDiagonal) {
-  const adx = Math.abs(dx);
-  const ady = Math.abs(dy);
-  if (adx === 0 && ady === 0) return null;
-
-  const ratio = adx === 0 ? Infinity : ady / adx;
-
-  if (ratio < 0.4142) {
-    // Zona horizontal (< 22.5° do eixo X)
-    return { stepRow: 0, stepCol: Math.sign(dx) };
-  }
-  if (ratio > 2.4142) {
-    // Zona vertical (> 67.5° do eixo X)
-    return { stepRow: Math.sign(dy), stepCol: 0 };
-  }
-  // Zona diagonal (entre 22.5° e 67.5°)
-  if (!includeDiagonal) {
-    // Sem diagonal: snap para o eixo dominante
-    return adx >= ady
-      ? { stepRow: 0, stepCol: Math.sign(dx) }
-      : { stepRow: Math.sign(dy), stepCol: 0 };
-  }
-  return { stepRow: Math.sign(dy), stepCol: Math.sign(dx) };
-}
-
-// Projeta o toque atual (locationX/Y) na direção travada e retorna a célula snappada.
-// Tudo em coordenadas locais ao gridFrame — sem dependência de medição absoluta.
-function getSnappedEndCell(locationX, locationY, anchor, direction, grid, metrics) {
-  const rowCount = grid.length;
-  const colCount = grid[0]?.length ?? 0;
-  const stride = metrics.cellSize + metrics.gap;
-
-  // Centro da célula âncora em coordenadas locais
-  const anchorLocX = metrics.horizontalPadding + anchor.col * stride + metrics.cellSize / 2;
-  const anchorLocY = metrics.horizontalPadding + anchor.row * stride + metrics.cellSize / 2;
-
-  const dx = locationX - anchorLocX;
-  const dy = locationY - anchorLocY;
-
-  // Projeção do deslocamento na direção travada, convertida para passos de célula
-  let steps;
-  if (direction.stepRow === 0) {
-    steps = (dx * direction.stepCol) / stride;
-  } else if (direction.stepCol === 0) {
-    steps = (dy * direction.stepRow) / stride;
-  } else {
-    // Diagonal: dot product per step = stepCol*stride + stepRow*stride = 2*stride
-    steps = (dx * direction.stepCol + dy * direction.stepRow) / (2 * stride);
-  }
-
-  steps = Math.max(0, Math.round(steps));
-
-  // Clamp aos limites da grade
-  while (steps > 0) {
-    const r = anchor.row + direction.stepRow * steps;
-    const c = anchor.col + direction.stepCol * steps;
-    if (r >= 0 && r < rowCount && c >= 0 && c < colCount) break;
-    steps -= 1;
-  }
-
-  return (
-    grid[anchor.row + direction.stepRow * steps]?.[anchor.col + direction.stepCol * steps] ??
-    anchor
-  );
-}
-
 const BASE_LINE_WIDTH = 600;
+
+function FoundHighlight({ placement, metrics, thickness }) {
+  const opacity = useRef(new Animated.Value(0.35)).current;
+  useEffect(() => {
+    const animation = Animated.timing(opacity, { toValue: 0.96, duration: 160, useNativeDriver: true });
+    animation.start();
+    return () => animation.stop();
+  }, [opacity]);
+  const lineStyle = buildHighlightStyle(placement.cells, metrics, thickness);
+  if (!lineStyle) return null;
+  return <Animated.View style={[styles.highlightLine, lineStyle, {
+    opacity, backgroundColor: placement.color?.fill || palette.found,
+  }]} />;
+}
 
 function renderHintCircle(hintCell, metrics, hintPulse) {
   const stride = metrics.cellSize + metrics.gap;
@@ -199,10 +144,12 @@ function WordSearchGrid({
   showOnboarding = false,
   onInteractionStart,
   includeDiagonal = false,
+  directionDistribution,
   letterShadow = false,
   onSelectionStart,
   onSelectionMove,
   onSelectionEnd,
+  onSelectionCancel,
   disabled,
   maxHeight,
 }) {
@@ -214,8 +161,12 @@ function WordSearchGrid({
   metricsRef.current = metrics;
 
   const anchorCellRef = useRef(null);
+  const touchStartPointRef = useRef(null);
   const lockedDirectionRef = useRef(null);
   const lastSnappedKeyRef = useRef(null);
+  const pendingGuideRef = useRef(null);
+  const guideAnimationRef = useRef(null);
+  const fadeAnimationRef = useRef(null);
   const guidePlacementRef = useRef(guidePlacement);
   guidePlacementRef.current = guidePlacement;
   const onGuideCompleteRef = useRef(onGuideComplete);
@@ -239,25 +190,30 @@ function WordSearchGrid({
   // Valores animados — atualizados via .setValue(), sem re-render do React
   const animTX = useRef(new Animated.Value(0)).current;
   const animTY = useRef(new Animated.Value(0)).current;
-  const animScale = useRef(new Animated.Value(0)).current;
+  const animLength = useRef(new Animated.Value(0)).current;
   const animAngle = useRef(new Animated.Value(0)).current;
   const animOpacity = useRef(new Animated.Value(0)).current;
 
-  function updateActiveLine(anchorCell, endCell) {
-    const m = metricsRef.current;
-    const start = getCellCenter(anchorCell, m);
-    const end = getCellCenter(endCell, m);
-    const deltaX = end.x - start.x;
-    const deltaY = end.y - start.y;
-    const distance = Math.hypot(deltaX, deltaY);
-    const lineWidth = distance + m.cellSize * 0.92;
-    const thickness = Math.max(18, Math.floor(m.cellSize * 0.78));
+  useEffect(() => {
+    anchorCellRef.current = null;
+    pendingGuideRef.current = null;
+    guideAnimationRef.current?.stop();
+    fadeAnimationRef.current?.stop();
+    animOpacity.setValue(0);
+    return () => {
+      guideAnimationRef.current?.stop();
+      fadeAnimationRef.current?.stop();
+    };
+  }, [grid]);
 
-    animTX.setValue((start.x + end.x) / 2 - BASE_LINE_WIDTH / 2);
-    animTY.setValue((start.y + end.y) / 2 - thickness / 2);
-    animScale.setValue(lineWidth / BASE_LINE_WIDTH);
-    animAngle.setValue(Math.atan2(deltaY, deltaX));
-    animOpacity.setValue(1);
+  function updateActiveLine(anchorCell, endPoint) {
+    const start = getCellCenter(anchorCell, metricsRef.current);
+    const dx = endPoint.x - start.x, dy = endPoint.y - start.y;
+    animTX.setValue(start.x);
+    animTY.setValue(start.y);
+    animLength.setValue(Math.hypot(dx, dy));
+    animAngle.setValue(Math.atan2(dy, dx));
+    animOpacity.setValue(0.28);
   }
 
   function triggerGuideAnimation() {
@@ -271,19 +227,16 @@ function WordSearchGrid({
     const deltaX = end.x - start.x;
     const deltaY = end.y - start.y;
     const distance = Math.hypot(deltaX, deltaY);
-    const lineWidth = distance + m.cellSize * 0.92;
-    const thickness = Math.max(18, Math.floor(m.cellSize * 0.78));
-    const targetScale = lineWidth / BASE_LINE_WIDTH;
 
-    animTX.setValue((start.x + end.x) / 2 - BASE_LINE_WIDTH / 2);
-    animTY.setValue((start.y + end.y) / 2 - thickness / 2);
+    animTX.setValue(start.x);
+    animTY.setValue(start.y);
     animAngle.setValue(Math.atan2(deltaY, deltaX));
-    animScale.setValue(0);
-    animOpacity.setValue(1);
+    animLength.setValue(0);
+    animOpacity.setValue(0.28);
 
-    Animated.sequence([
-      Animated.timing(animScale, {
-        toValue: targetScale,
+    guideAnimationRef.current = Animated.sequence([
+      Animated.timing(animLength, {
+        toValue: distance,
         duration: 550,
         easing: Easing.out(Easing.quad),
         useNativeDriver: true,
@@ -294,8 +247,9 @@ function WordSearchGrid({
         duration: 200,
         useNativeDriver: true,
       }),
-    ]).start(() => {
-      onGuideCompleteRef.current?.(guide);
+    ]);
+    guideAnimationRef.current.start(({ finished }) => {
+      if (finished) onGuideCompleteRef.current?.(guide);
     });
   }
 
@@ -315,26 +269,23 @@ function WordSearchGrid({
     );
     if (!cell) return;
 
+    guideAnimationRef.current?.stop();
+    fadeAnimationRef.current?.stop();
     const guide = guidePlacementRef.current;
-    if (guide?.cells?.length) {
-      const guideFirst = guide.cells[0];
-      if (cell.row === guideFirst.row && cell.col === guideFirst.col) {
-        playPop();
-        triggerGuideAnimation();
-        return;
-      }
-    }
+    const first = guide?.cells?.[0];
+    pendingGuideRef.current = first && first.row === cell.row && first.col === cell.col ? guide : null;
 
     anchorCellRef.current = cell;
+    touchStartPointRef.current = { x: nativeEvent.locationX, y: nativeEvent.locationY };
     lockedDirectionRef.current = null;
     lastSnappedKeyRef.current = `${cell.row}-${cell.col}`;
-    animOpacity.setValue(0);
+    updateActiveLine(cell, getCellCenter(cell, m));
     playPop();
     callback(cell);
   }
 
-  // Movimento: trava direção após sair da zona morta (~0.6 célula),
-  // depois projeta o toque na direção travada para snap discreto.
+  // Continuous projection drives the highlight; only cell changes reach validation.
+  // Returning to the anchor unlocks the direction for natural reversal.
   function handleTouchMove(nativeEvent, callback) {
     if (disabled || !anchorCellRef.current) return;
 
@@ -342,54 +293,47 @@ function WordSearchGrid({
     const m = metricsRef.current;
     const { locationX, locationY } = nativeEvent;
 
-    if (!lockedDirectionRef.current) {
-      const stride = m.cellSize + m.gap;
-      const anchorLocX = m.horizontalPadding + anchor.col * stride + m.cellSize / 2;
-      const anchorLocY = m.horizontalPadding + anchor.row * stride + m.cellSize / 2;
-      const dx = locationX - anchorLocX;
-      const dy = locationY - anchorLocY;
-
-      if (Math.hypot(dx, dy) < stride * 0.6) return; // zona morta
-
-      lockedDirectionRef.current = quantizeDirection(dx, dy, includeDiagonal);
+    const start = getCellCenter(anchor, m);
+    const dx = locationX - start.x, dy = locationY - start.y;
+    const stride = m.cellSize + m.gap;
+    const origin = touchStartPointRef.current;
+    const moved = Math.hypot(locationX - origin.x, locationY - origin.y) > stride * 0.2;
+    if (moved) pendingGuideRef.current = null;
+    if (!lockedDirectionRef.current && moved) {
+      lockedDirectionRef.current = resolveGestureDirection(dx, dy, { includeDiagonal, directionDistribution });
     }
-
-    if (!lockedDirectionRef.current) return;
-
-    const snappedCell = getSnappedEndCell(
-      locationX,
-      locationY,
-      anchor,
-      lockedDirectionRef.current,
-      grid,
-      m
-    );
-
-    const isAtAnchor = snappedCell.row === anchor.row && snappedCell.col === anchor.col;
-    if (isAtAnchor) {
-      animOpacity.setValue(0);
-    } else {
-      updateActiveLine(anchor, snappedCell);
+    const direction = lockedDirectionRef.current;
+    if (!direction) return;
+    const projected = projectGesture({ x: locationX, y: locationY }, anchor, direction, m, grid);
+    updateActiveLine(anchor, projected.end);
+    if (projected.progress < 0.25) lockedDirectionRef.current = null;
+    const key = projected.cell.row + '-' + projected.cell.col;
+    if (key !== lastSnappedKeyRef.current) {
+      lastSnappedKeyRef.current = key;
+      callback(projected.cell);
     }
-
-    const snappedKey = `${snappedCell.row}-${snappedCell.col}`;
-    if (snappedKey !== lastSnappedKeyRef.current) {
-      lastSnappedKeyRef.current = snappedKey;
-      playPop();
-    }
-
-    callback(snappedCell);
   }
 
-  function handleRelease(event) {
-    animOpacity.setValue(0);
+  function handleRelease(event, cancelled = false) {
+    if (!anchorCellRef.current) return;
+    if (!cancelled && event?.nativeEvent) handleTouchMove(event.nativeEvent, onSelectionMove);
+    const guide = pendingGuideRef.current;
+    pendingGuideRef.current = null;
     anchorCellRef.current = null;
     lockedDirectionRef.current = null;
-    onSelectionEnd?.(event);
+    if (cancelled || guide) {
+      onSelectionCancel?.();
+      if (guide && !cancelled) { triggerGuideAnimation(); return; }
+    }
+    const match = cancelled ? null : onSelectionEnd?.();
+    fadeAnimationRef.current = Animated.timing(animOpacity, {
+      toValue: 0, duration: match ? 100 : 180, useNativeDriver: true,
+    });
+    fadeAnimationRef.current.start();
   }
 
   const foundLineThickness = Math.max(16, Math.floor(metrics.cellSize * 0.68));
-  const activeLineThickness = Math.max(18, Math.floor(metrics.cellSize * 0.78));
+  const activeLineThickness = Math.max(18, Math.floor(metrics.cellSize * 0.68));
 
   return (
     <View style={styles.wrapper}>
@@ -417,48 +361,35 @@ function WordSearchGrid({
           handleTouchMove(nativeEvent, onSelectionMove)
         }
         onResponderRelease={handleRelease}
-        onResponderTerminate={handleRelease}
+        onResponderTerminationRequest={() => false}
+        onResponderTerminate={(event) => handleRelease(event, true)}
       >
         {/* pointerEvents="none" garante que locationX/Y das views filhas não
             interceptem o toque — o gridFrame sempre é o alvo do toque */}
         <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-          {foundPlacements.map((placement) => {
-            const lineStyle = buildHighlightStyle(placement.cells, metrics, foundLineThickness);
-            if (!lineStyle) return null;
-            return (
-              <View
-                key={`found-line-${placement.word}`}
-                style={[
-                  styles.highlightLine,
-                  lineStyle,
-                  { backgroundColor: placement.color?.fill || palette.found },
-                ]}
-              />
-            );
-          })}
-          <Animated.View
-            style={[
-              styles.highlightLine,
-              styles.activeSelectionLine,
-              {
-                width: BASE_LINE_WIDTH,
-                height: activeLineThickness,
-                borderRadius: activeLineThickness / 2,
-                opacity: animOpacity,
-                transform: [
-                  { translateX: animTX },
-                  { translateY: animTY },
-                  {
-                    rotateZ: animAngle.interpolate({
-                      inputRange: [-Math.PI, Math.PI],
-                      outputRange: ['-3.14159rad', '3.14159rad'],
-                    }),
-                  },
-                  { scaleX: animScale },
-                ],
-              },
-            ]}
-          />
+          {foundPlacements.map((placement) => (
+            <FoundHighlight key={placement.word} placement={placement} metrics={metrics} thickness={foundLineThickness} />
+          ))}
+          <Animated.View pointerEvents="none" needsOffscreenAlphaCompositing style={{
+            position: 'absolute', left: -activeLineThickness / 2, top: -activeLineThickness / 2,
+            width: BASE_LINE_WIDTH + activeLineThickness, height: activeLineThickness, opacity: animOpacity,
+            transformOrigin: [activeLineThickness / 2, activeLineThickness / 2, 0],
+            transform: [{ translateX: animTX }, { translateY: animTY }, {
+              rotateZ: animAngle.interpolate({ inputRange: [-Math.PI, Math.PI], outputRange: ['-3.14159rad', '3.14159rad'] }),
+            }],
+          }}>
+            <Animated.View style={[styles.activeSelectionLine, {
+              position: 'absolute', left: activeLineThickness / 2, top: 0,
+              width: BASE_LINE_WIDTH, height: activeLineThickness,
+              transformOrigin: 'left center',
+              transform: [{ scaleX: animLength.interpolate({ inputRange: [0, BASE_LINE_WIDTH], outputRange: [0, 1] }) }],
+            }]} />
+            <View style={[styles.activeSelectionLine, { position: 'absolute', left: 0,
+              top: 0, width: activeLineThickness, height: activeLineThickness, borderRadius: activeLineThickness / 2 }]} />
+            <Animated.View style={[styles.activeSelectionLine, { position: 'absolute', left: 0,
+              top: 0, width: activeLineThickness, height: activeLineThickness, borderRadius: activeLineThickness / 2,
+              transform: [{ translateX: animLength }] }]} />
+          </Animated.View>
           {hintCell != null && renderHintCircle(hintCell, metrics, hintPulse)}
         </View>
         {grid.map((row, rowIndex) => (
@@ -498,6 +429,8 @@ export default memo(WordSearchGrid, (prev, next) => {
     prev.onInteractionStart === next.onInteractionStart &&
     prev.disabled === next.disabled &&
     prev.includeDiagonal === next.includeDiagonal &&
+    prev.directionDistribution === next.directionDistribution &&
+    prev.onSelectionCancel === next.onSelectionCancel &&
     prev.letterShadow === next.letterShadow &&
     prev.maxHeight === next.maxHeight &&
     prev.onSelectionStart === next.onSelectionStart &&
@@ -550,7 +483,7 @@ const styles = StyleSheet.create({
     opacity: 0.96,
   },
   activeSelectionLine: {
-    backgroundColor: 'rgba(224, 44, 44, 0.88)',
+    backgroundColor: '#E02C2C',
   },
   cell: {
     justifyContent: 'center',

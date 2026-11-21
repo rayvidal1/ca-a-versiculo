@@ -13,7 +13,7 @@ const sources = new Map();
 function harness() {
   const slots = [], effects = [], timers = [], cache = new Map();
   let cursor = 0, dirty = false, renderFn, output;
-  const stats = { victories: 0, successes: 0 };
+  const stats = { victories: 0, successes: 0, haptics: 0, stateUpdates: 0, animations: [] };
   const changed = (a, b) => !a || !b || a.length !== b.length || b.some((v, i) => !Object.is(v, a[i]));
   const react = {
     memo: (component) => component,
@@ -22,7 +22,7 @@ function harness() {
       if (!slots[i]) slots[i] = { value: typeof initial === 'function' ? initial() : initial };
       return [slots[i].value, (next) => {
         const value = typeof next === 'function' ? next(slots[i].value) : next;
-        if (!Object.is(value, slots[i].value)) { slots[i].value = value; dirty = true; }
+        if (!Object.is(value, slots[i].value)) { stats.stateUpdates++; slots[i].value = value; dirty = true; }
       }];
     },
     useRef(value) { const i = cursor++; return slots[i] ??= { current: value }; },
@@ -41,10 +41,16 @@ function harness() {
   };
   const animation = () => ({ start() {}, stop() {} });
   const native = {
+    Platform: { OS: 'android' }, Vibration: { vibrate: () => stats.haptics++ },
     View: 'View', Text: 'Text', Pressable: 'Pressable', ScrollView: 'ScrollView',
     Animated: {
-      Value: class { setValue() {} interpolate() { return 0; } },
-      sequence: animation, parallel: animation, timing: animation,
+      Value: class {
+        constructor(value) { this.value = value; }
+        setValue(value) { this.value = value; }
+        interpolate(options) { return { input: this, options }; }
+      },
+      sequence: animation, parallel: animation,
+      timing(value, options) { stats.animations.push(options); return animation(); },
       spring: animation, loop: animation, delay: animation,
       View: 'AnimatedView',
     },
@@ -198,12 +204,13 @@ test('manual and guide completion count once and automatically advance after 130
         const cells = grid.guidePlacement.cells;
         grid.onSelectionStart(cells[0]);
         grid.onSelectionMove(cells.at(-1));
-        grid.onSelectionEnd();
+        assert.equal(grid.onSelectionEnd().word, grid.guidePlacement.word);
         tree = h.flush();
       }
     }
     assert.equal(count, 1);
     assert.equal(h.stats.victories, 1);
+    assert.equal(h.stats.haptics, find(tree, 'WordSearchGrid').foundPlacements.length);
     assert.ok(find(tree, 'PhraseToast').phrase);
     assert.equal(find(tree, 'WordSearchGrid').grid, originalGrid, 'tutorial advance must preserve completed round');
     tree = h.flush();
@@ -219,6 +226,84 @@ test('manual and guide completion count once and automatically advance after 130
     h.unmount();
     assert.equal(h.pending(), 0, 'timers must be cancelled on exit');
   }
+});
+
+test('drag is continuous, retraces, clamps outside the board and never sets React state on move', () => {
+  for (const [includeDiagonal, dx, dy, expected] of [
+    [false, 264, 0, [0, 4]], [false, 0, 264, [4, 0]],
+    [false, 264, 264, [0, 4]], [true, 264, 264, [4, 4]],
+  ]) {
+    const h = harness(), Grid = h.load('src/components/WordSearchGrid.js').default;
+    const grid = Array.from({ length: 5 }, (_, row) => Array.from({ length: 5 }, (_, col) => ({ row, col, letter: 'A' })));
+    let last, ended = 0, cancelled = 0;
+    const tree = h.mount(() => Grid({ grid, includeDiagonal,
+      onSelectionStart: (cell) => { last = cell; }, onSelectionMove: (cell) => { last = cell; },
+      onSelectionEnd: () => { ended++; return null; }, onSelectionCancel: () => cancelled++,
+    }));
+    const frame = tree.props.children.find((child) => child?.props?.onResponderGrant);
+    const event = (x, y) => ({ nativeEvent: { locationX: x, locationY: y } });
+    frame.props.onResponderGrant(event(44.5, 44.5));
+    const updates = h.stats.stateUpdates;
+    frame.props.onResponderMove(event(44.5 + dx, 44.5 + dy));
+    assert.deepEqual([last.row, last.col], expected);
+    frame.props.onResponderMove(event(44.5 + dx / 2, 44.5 + dy / 2));
+    assert.deepEqual([last.row, last.col], expected.map((n) => n / 2));
+    const activeLine = find(tree, 'AnimatedView');
+    const cap = activeLine.children.at(-1);
+    const length = cap.props.style[1].transform[0].translateX;
+    frame.props.onResponderMove(event(44.5 + dx * 0.51, 44.5 + dy * 0.51));
+    assert.ok(length.value > Math.hypot(expected[0], expected[1]) * 66 / 2, 'line moves between cell centers');
+    frame.props.onResponderMove(event(44.5 + dx * 100, 44.5 + dy * 100));
+    assert.deepEqual([last.row, last.col], expected);
+    assert.equal(h.stats.stateUpdates, updates);
+    assert.equal(frame.props.onResponderTerminationRequest(), false);
+    frame.props.onResponderTerminate(event(44.5, 44.5));
+    assert.equal(cancelled, 1);
+    assert.equal(ended, 0, 'OS cancellation must not validate a word');
+    assert.equal(h.stats.animations.at(-1).duration, 180);
+    h.unmount();
+  }
+});
+
+test('gesture directions follow mode axes and reverse validation remains available', () => {
+  const h = harness();
+  const { resolveGestureDirection, projectGesture } = h.load('src/utils/gridGesture.js');
+  assert.deepEqual(resolveGestureDirection(1, 20, { directionDistribution: { right: 1 } }), { stepRow: 0, stepCol: 1 });
+  assert.deepEqual(resolveGestureDirection(-20, 1, { directionDistribution: { right: 1 } }), { stepRow: 0, stepCol: -1 });
+  assert.equal(resolveGestureDirection(1, 1, { directionDistribution: {} }), null);
+  assert.deepEqual(resolveGestureDirection(20, -20, { directionDistribution: { diagonalDown: 1 } }), { stepRow: -1, stepCol: 1 });
+  const grid = Array.from({ length: 5 }, (_, row) => Array.from({ length: 5 }, (_, col) => ({ row, col })));
+  const metrics = { cellSize: 40, gap: 5, horizontalPadding: 10 };
+  const anchor = grid[2][2];
+  assert.equal(projectGesture({ x: 500, y: 120 }, anchor, { stepRow: 0, stepCol: 1 }, metrics, grid).cell, grid[2][4]);
+  assert.equal(projectGesture({ x: 120, y: 120 }, anchor, { stepRow: 0, stepCol: 1 }, metrics, grid).cell, anchor);
+  assert.equal(projectGesture({ x: -500, y: 120 }, anchor, { stepRow: 0, stepCol: -1 }, metrics, grid).cell, grid[2][0]);
+});
+
+test('tutorial allows manual drag; successful release samples the final position and fades smoothly', () => {
+  const h = harness(), Grid = h.load('src/components/WordSearchGrid.js').default;
+  const grid = Array.from({ length: 5 }, (_, row) => Array.from({ length: 5 }, (_, col) => ({ row, col, letter: 'A' })));
+  const guide = { word: 'AAA', cells: grid[0].slice(0, 3) };
+  let last, ended = 0, cancelled = 0;
+  const tree = h.mount(() => Grid({ grid, guidePlacement: guide,
+    onSelectionStart: (cell) => { last = cell; }, onSelectionMove: (cell) => { last = cell; },
+    onSelectionEnd: () => { ended++; return guide; }, onSelectionCancel: () => cancelled++,
+  }));
+  const frame = tree.props.children.find((child) => child?.props?.onResponderGrant);
+  const event = (x) => ({ nativeEvent: { locationX: x, locationY: 44.5 } });
+  frame.props.onResponderGrant(event(44.5));
+  frame.props.onResponderMove(event(110.5));
+  frame.props.onResponderRelease(event(176.5));
+  assert.equal(last, grid[0][2], 'release updates the endpoint even without a last move event');
+  assert.equal(ended, 1);
+  assert.equal(cancelled, 0, 'dragging the guide word must use normal validation');
+  assert.equal(h.stats.animations.at(-1).duration, 100);
+  frame.props.onResponderGrant(event(44.5));
+  frame.props.onResponderRelease(event(44.5));
+  assert.equal(ended, 1, 'tap retains the existing animated guide');
+  assert.equal(cancelled, 1);
+  assert.ok(h.stats.animations.some((animation) => animation.duration === 550));
+  h.unmount();
 });
 
 test('actual card has no New button and onboarding dismisses without blocking selection', () => {

@@ -1,5 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+
+import Svg, { Path } from 'react-native-svg';
 
 import { palette, shadow } from '../theme/palette.js';
 
@@ -44,11 +46,42 @@ export default function VerseCard({
   onHint,
   isComplete,
 }) {
+  const [size, setSize] = useState({ width: 0, height: 0 });
+  const { width: w, height: h } = size;
+  // One closed outline: broad page curves, a soft top dip and a rounded lower spine.
+  const outline = w && h ? [
+    'M 10 18',
+    'C ' + w * 0.18 + ' 26 ' + w * 0.33 + ' -4 ' + w * 0.43 + ' 8',
+    'C ' + w * 0.47 + ' 13 ' + w * 0.48 + ' 23 ' + w * 0.495 + ' 27',
+    'Q ' + w * 0.5 + ' 30 ' + w * 0.505 + ' 27',
+    'C ' + w * 0.52 + ' 23 ' + w * 0.53 + ' 13 ' + w * 0.57 + ' 8',
+    'C ' + w * 0.67 + ' -4 ' + w * 0.82 + ' 26 ' + (w - 10) + ' 18',
+    'Q ' + (w - 2) + ' 16 ' + (w - 2) + ' 26',
+    'L ' + (w - 2) + ' ' + (h - 20),
+    'Q ' + (w - 2) + ' ' + (h - 12) + ' ' + (w - 10) + ' ' + (h - 10),
+    'C ' + w * 0.82 + ' ' + (h + 2) + ' ' + w * 0.67 + ' ' + (h - 22) + ' ' + w * 0.57 + ' ' + (h - 14),
+    'C ' + w * 0.53 + ' ' + (h - 10) + ' ' + w * 0.53 + ' ' + (h - 2) + ' ' + w * 0.5 + ' ' + (h - 2),
+    'C ' + w * 0.47 + ' ' + (h - 2) + ' ' + w * 0.47 + ' ' + (h - 10) + ' ' + w * 0.43 + ' ' + (h - 14),
+    'C ' + w * 0.33 + ' ' + (h - 22) + ' ' + w * 0.18 + ' ' + (h + 2) + ' 10 ' + (h - 10),
+    'Q 2 ' + (h - 12) + ' 2 ' + (h - 20),
+    'L 2 26 Q 2 16 10 18 Z',
+  ].join(' ') : '';
+
+  function handleLayout({ nativeEvent: { layout } }) {
+    setSize((current) => current.width === layout.width && current.height === layout.height
+      ? current : { width: layout.width, height: layout.height });
+  }
+
   return (
     <View style={styles.cardShell}>
-      <View style={styles.card}>
-        <View style={styles.glassGlow} pointerEvents="none" />
-        <View style={[styles.cardTint, isComplete && styles.cardTintComplete]}>
+      <View style={styles.card} onLayout={handleLayout}>
+        {outline !== '' && (
+          <Svg pointerEvents="none" accessible={false} width={w} height={h} style={StyleSheet.absoluteFill}>
+            <Path d={outline} fill={isComplete ? '#F3FAF6' : '#FFFFFF'}
+              stroke="rgba(124, 106, 74, 0.22)" strokeWidth={1} strokeLinejoin="round" />
+          </Svg>
+        )}
+        <View style={styles.cardTint}>
           <View style={styles.header}>
             <Text style={styles.reference}>{reference}</Text>
             <View style={styles.headerButtons}>
@@ -101,27 +134,23 @@ export default function VerseCard({
 
 const styles = StyleSheet.create({
   cardShell: {
-    borderRadius: 24,
-    overflow: 'hidden',
+    maxHeight: '100%',
+    flexShrink: 1,
     ...shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 0,
   },
   card: {
-    borderRadius: 24,
-    overflow: 'hidden',
-    backgroundColor: '#FFFFFF',
-  },
-  glassGlow: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'transparent',
+    position: 'relative',
+    flexShrink: 1,
   },
   cardTint: {
-    padding: 18,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.06)',
-  },
-  cardTintComplete: {
-    backgroundColor: 'rgba(224,243,232,0.4)',
+    paddingHorizontal: 18,
+    paddingTop: 34,
+    paddingBottom: 28,
+    flexShrink: 1,
   },
   header: {
     flexDirection: 'row',

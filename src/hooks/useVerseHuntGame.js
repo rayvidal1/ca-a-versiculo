@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Share } from 'react-native';
+import { Animated, Platform, Share, Vibration } from 'react-native';
 
 import { useSoundEffect } from './useSoundEffect.js';
 
@@ -238,6 +238,9 @@ export function useVerseHuntGame(verse, options = {}, { onComplete } = {}) {
     if (!latest) return;
     setLastFoundWord(latest.word);
     playSuccess();
+    if (Platform.OS === 'android') {
+      try { Vibration.vibrate(8); } catch (_) { /* Unsupported devices remain silent. */ }
+    }
   }, [foundPlacements]);
 
   useEffect(() => {
@@ -282,6 +285,7 @@ export function useVerseHuntGame(verse, options = {}, { onComplete } = {}) {
     }
 
     updateSelectedCells([]);
+    return matchedPlacement;
   }
 
   function handleSelectionStart(cell) {
@@ -319,8 +323,15 @@ export function useVerseHuntGame(verse, options = {}, { onComplete } = {}) {
     }
 
     setSelectionInvalid(false);
-    commitSelection(selectedCellsRef.current);
+    const match = commitSelection(selectedCellsRef.current);
     selectionAnchorRef.current = null;
+    return match;
+  }
+
+  function handleSelectionCancel() {
+    selectionAnchorRef.current = null;
+    setSelectionInvalid(false);
+    updateSelectedCells([]);
   }
 
   function addFoundPlacement(placement) {
@@ -369,6 +380,7 @@ export function useVerseHuntGame(verse, options = {}, { onComplete } = {}) {
     handleSelectionStart,
     handleSelectionMove,
     handleSelectionEnd,
+    handleSelectionCancel,
     shareVerse,
   };
 }

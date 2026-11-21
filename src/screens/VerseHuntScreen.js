@@ -96,6 +96,7 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
     handleSelectionStart,
     handleSelectionMove,
     handleSelectionEnd,
+    handleSelectionCancel,
   } = useVerseHuntGame(currentVerse, activeGameOptions, {
     onComplete: () => {
       onVersePlayed?.();
@@ -233,9 +234,11 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
                     addFoundPlacement(placement);
                   }}
                   includeDiagonal={activeGameOptions.includeDiagonal ?? false}
+                  directionDistribution={activeGameOptions.directionDistribution}
                   onSelectionStart={handleSelectionStart}
                   onSelectionMove={handleSelectionMove}
                   onSelectionEnd={handleSelectionEnd}
+                  onSelectionCancel={handleSelectionCancel}
                   disabled={isComplete}
                 />
               </View>
