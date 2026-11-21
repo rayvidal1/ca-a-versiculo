@@ -13,10 +13,11 @@ const sources = new Map();
 function harness({ verseData = verses } = {}) {
   const slots = [], effects = [], timers = [], cache = new Map();
   let cursor = 0, dirty = false, renderFn, output;
-  const stats = { victories: 0, successes: 0, haptics: 0, stateUpdates: 0, animations: [] };
+  const stats = { victories: 0, successes: 0, haptics: 0, versePicks: 0, stateUpdates: 0, animations: [] };
   const changed = (a, b) => !a || !b || a.length !== b.length || b.some((v, i) => !Object.is(v, a[i]));
   const react = {
     memo: (component) => component,
+    useCallback: (callback, deps) => react.useMemo(() => callback, deps),
     useState(initial) {
       const i = cursor++;
       if (!slots[i]) slots[i] = { value: typeof initial === 'function' ? initial() : initial };
@@ -42,7 +43,7 @@ function harness({ verseData = verses } = {}) {
   const animation = () => ({ start() {}, stop() {} });
   const native = {
     Platform: { OS: 'android' }, Vibration: { vibrate: () => stats.haptics++ },
-    View: 'View', Text: 'Text', Pressable: 'Pressable', ScrollView: 'ScrollView',
+    View: 'View', Text: 'Text', Pressable: 'Pressable', TouchableOpacity: 'TouchableOpacity', ScrollView: 'ScrollView', SafeAreaView: 'SafeAreaView',
     Animated: {
       Value: class {
         constructor(value) { this.value = value; }
@@ -76,6 +77,11 @@ function harness({ verseData = verses } = {}) {
       if (name === 'react') return react;
       if (name.includes('jsx-runtime')) return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
       if (name === 'react-native') return native;
+      if (name === 'expo-splash-screen') return { preventAutoHideAsync: async () => {}, hideAsync: async () => {} };
+      if (name === 'expo-status-bar') return { StatusBar: 'StatusBar' };
+      if (name.includes('useBackgroundMusic')) return { useBackgroundMusic: () => {} };
+      if (name.includes('useVersesPlayed')) return { useVersesPlayed: () => [6, () => {}] };
+      if (name.includes('/screens/')) return { __esModule: true, default: path.basename(name, '.js') };
       if (name === '@react-native-async-storage/async-storage') return {
         getItem: async () => null, setItem: async () => {},
       };
@@ -83,9 +89,10 @@ function harness({ verseData = verses } = {}) {
       if (name.includes('useVictorySound')) return { useVictorySound: () => () => stats.victories++ };
       if (name.includes('/components/')) return { __esModule: true, default: path.basename(name, '.js') };
       if (name.includes('verseSource')) return {
-        getInitialVerse: () => verses[0], getRandomVerse: (id) => verses.find((v) => v.id !== id),
+        initVerseHistory: async () => {},
+        getInitialVerse: () => verses[0], getRandomVerse: (id) => { stats.versePicks++; return verses.find((v) => v.id !== id); },
       };
-      if (/\.(png|mp3|wav)$/.test(name)) return name;
+      if (/\.(png|jpg|jpeg|mp3|wav)$/.test(name)) return name;
       if (name.startsWith('.')) return load(path.resolve(path.dirname(file), name));
       return { __esModule: true, default: name };
     };
@@ -109,6 +116,7 @@ function harness({ verseData = verses } = {}) {
   }
   return {
     load, stats, flush,
+    renderPending() { cursor = 0; return renderFn(); },
     advance(ms) {
       const ready = timers.filter((t) => !t.cancelled && t.delay <= ms);
       timers.forEach((t) => { t.delay = Math.max(0, t.delay - ms); });
@@ -133,6 +141,37 @@ function find(tree, type) {
   }
   return null;
 }
+
+test('entry screen is skipped and settings return directly to the game', () => {
+  const h = harness();
+  const App = h.load('App.js').default;
+  let tree = h.mount(() => App());
+  find(tree, 'IntroSplashScreen').onFinish();
+  tree = h.flush();
+  assert.equal(find(tree, 'HomeScreen'), null);
+  assert.equal(find(tree, 'VerseHuntScreen').onBack, undefined);
+  find(tree, 'VerseHuntScreen').onOpenSettings();
+  tree = h.flush();
+  const settings = find(tree, 'SettingsScreen');
+  settings.onSelectMode('dificil');
+  settings.onBack();
+  tree = h.flush();
+  assert.equal(find(tree, 'VerseHuntScreen').modeId, 'dificil');
+  assert.equal(find(tree, 'HomeScreen'), null);
+});
+
+test('game header exposes settings instead of a back button', () => {
+  const h = harness();
+  const Screen = h.load('src/screens/VerseHuntScreen.js').default;
+  let opened = false;
+  const tree = h.mount(() => Screen({ modeId: 'facil', isTutorial: false, tutorialRound: 5,
+    onOpenSettings: () => { opened = true; } }));
+  const button = find(tree, 'TouchableOpacity');
+  assert.equal(button.accessibilityLabel, 'Configura\u00e7\u00f5es');
+  button.onPress();
+  assert.equal(opened, true);
+  assert.equal(JSON.stringify(tree).includes('\u2039'), false);
+});
 
 test('134 verses generate 3+ letter targets in all modes and five tutorial stages', () => {
   const h = harness();
@@ -236,7 +275,7 @@ test('production verse source loads the offline BPM catalogue and preserves hist
   }
 });
 
-test('manual and guide completion count once and automatically advance after 1300ms', () => {
+test('manual and guide completion count once and wait for Next without automatic advance', () => {
   for (const guide of [false, true]) {
     const h = harness();
     const Screen = h.load('src/screens/VerseHuntScreen.js').default;
@@ -277,9 +316,18 @@ test('manual and guide completion count once and automatically advance after 130
     assert.equal(find(tree, 'WordSearchGrid').grid, originalGrid, 'tutorial advance must preserve completed round');
     tree = h.flush();
     assert.equal(count, 1);
-    tree = h.advance(1299);
-    assert.equal(find(tree, 'WordSearchGrid').grid, originalGrid);
-    tree = h.advance(1);
+    tree = h.advance(10000);
+    assert.equal(find(tree, 'WordSearchGrid').grid, originalGrid, 'completed game waits for a click');
+    const next = find(tree, 'TouchableOpacity');
+    const picks = h.stats.versePicks;
+    next.onPress();
+    next.onPress();
+    assert.equal(h.stats.versePicks, picks + 1, 'double tap advances only once');
+    const pressed = find(h.renderPending(), 'TouchableOpacity');
+    assert.equal(pressed.disabled, true, 'acknowledge the click before generating the next grid');
+    assert.equal(pressed.accessibilityState.disabled, true);
+    assert.equal(pressed.style.at(-1).backgroundColor, '#A3A3A3');
+    tree = h.flush();
     assert.notEqual(find(tree, 'WordSearchGrid').grid, originalGrid);
     assert.equal(count, 1);
     assert.equal(find(tree, 'WordSearchGrid').guidePlacement, null, 'next tutorial stage');

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Easing, ImageBackground, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 
-const BG = require('../assets/fundo.png');
+const BG = require('../assets/fundo01.jpg');
 
 import ConfettiCannon from 'react-native-confetti-cannon';
 
@@ -39,7 +39,7 @@ function pickRandom(list) {
 }
 
 
-export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onBack, onVersePlayed }) {
+export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onOpenSettings, onVersePlayed }) {
   const { width } = useWindowDimensions();
   const confettiRef = useRef(null);
 
@@ -74,7 +74,8 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
   const completionAnim = useRef(new Animated.Value(0)).current;
   const overlayFadeAnim = useRef(new Animated.Value(0)).current;
   const boardAnim = useRef(new Animated.Value(0)).current;
-  const nextVerseRef = useRef(null);
+  const nextVersePendingRef = useRef(false);
+  const [isAdvancing, setIsAdvancing] = useState(false);
   const [onboardingDismissed, setOnboardingDismissed] = useState(false);
 
   const [hintWord, setHintWord] = useState(null);
@@ -184,6 +185,9 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
   const overlayTranslateY = completionAnim.interpolate({ inputRange: [0, 1], outputRange: [-24, 0], extrapolate: 'clamp' });
 
   function handleNextVerse() {
+    if (!isComplete || isLoading || nextVersePendingRef.current) return;
+    nextVersePendingRef.current = true;
+    setIsAdvancing(true);
     playGameStart();
     const nextOptions = isTutorial ? getTutorialOptions(tutorialRound) : selectedMode.gameOptions;
     setRound({ options: nextOptions, isFirst: isTutorial && tutorialRound === 1 });
@@ -192,12 +196,12 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
     );
   }
 
-  nextVerseRef.current = handleNextVerse;
   useEffect(() => {
-    if (!isComplete || isLoading || error) return;
-    const timer = setTimeout(() => nextVerseRef.current?.(), 1300);
-    return () => clearTimeout(timer);
-  }, [isComplete, isLoading, error, currentVerse.id]);
+    if (!isLoading && !isComplete) {
+      nextVersePendingRef.current = false;
+      setIsAdvancing(false);
+    }
+  }, [isLoading, isComplete]);
 
   function handleSkipVerse() {
     setCurrentVerse((current) => getRandomVerse(current.id, activeGameOptions));
@@ -262,6 +266,17 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
                 isComplete={isComplete}
               />
               <FinalRevealAdBanner />
+              <TouchableOpacity
+                style={[styles.completionNextButton, isAdvancing && styles.nextButtonDisabled]}
+                onPress={handleNextVerse}
+                disabled={isAdvancing}
+                accessibilityState={{ disabled: isAdvancing }}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Próximo versículo"
+              >
+                <Text style={styles.completionNextButtonText}>Próximo</Text>
+              </TouchableOpacity>
             </Animated.View>
           )}
           {activePhrase && (
@@ -288,14 +303,16 @@ export default function VerseHuntScreen({ modeId, isTutorial, tutorialRound, onB
         </>
       )}
 
-      {/* Botão de voltar — sempre visível */}
+      {/* Configuracoes da tela principal */}
       <View style={styles.topBar}>
         <TouchableOpacity
-          style={styles.backButton}
-          onPress={onBack}
+          style={styles.settingsButton}
+          onPress={onOpenSettings}
+          accessibilityRole="button"
+          accessibilityLabel="Configurações"
           activeOpacity={0.7}
         >
-          <Text style={styles.backButtonIcon}>‹</Text>
+          <Text style={styles.settingsIcon}>⚙️</Text>
         </TouchableOpacity>
       </View>
 
@@ -377,6 +394,11 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
+  nextButtonDisabled: {
+    backgroundColor: '#A3A3A3',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
   completionOverlay: {
     position: 'absolute',
     top: 0,
@@ -396,15 +418,15 @@ const styles = StyleSheet.create({
   topBar: {
     position: 'absolute',
     top: 36,
-    left: 0,
-    right: 0,
+    left: 16,
+    right: 16,
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     alignItems: 'center',
   },
-  backButton: {
-    width: 36,
-    height: 36,
+  settingsButton: {
+    width: 44,
+    height: 44,
     borderRadius: 18,
     backgroundColor: 'rgba(255,255,255,0.18)',
     borderWidth: 1.2,
@@ -412,8 +434,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  backButtonIcon: {
-    fontSize: 18,
+  settingsIcon: {
+    fontSize: 27,
     color: '#FFFFFF',
   },
   verseCardWrapper: {

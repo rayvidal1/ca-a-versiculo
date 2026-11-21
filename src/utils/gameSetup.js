@@ -114,4 +114,3 @@ export function createGameState(verse, options) {
 
   throw lastError ?? new Error('Nao foi possivel iniciar o jogo.');
 }
-

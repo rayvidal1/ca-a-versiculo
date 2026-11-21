@@ -11,7 +11,6 @@ import {
 import { useBackgroundMusic } from './src/hooks/useBackgroundMusic.js';
 import { initVerseHistory } from './src/services/verseSource.js';
 import { useVersesPlayed } from './src/hooks/useVersesPlayed.js';
-import HomeScreen from './src/screens/HomeScreen.js';
 import IntroSplashScreen from './src/screens/IntroSplashScreen.js';
 import SettingsScreen from './src/screens/SettingsScreen.js';
 import VerseHuntScreen from './src/screens/VerseHuntScreen.js';
@@ -36,7 +35,7 @@ export default function App() {
     ExpoSplashScreen.hideAsync().catch(() => {});
   }, []);
   const handleIntroFinish = useCallback(() => {
-    setScreen('home');
+    setScreen('game');
   }, []);
 
   return (
@@ -44,26 +43,19 @@ export default function App() {
       <StatusBar style={screen === 'splash' ? 'dark' : 'light'} />
       {screen === 'splash' ? (
         <IntroSplashScreen onFinish={handleIntroFinish} />
-      ) : screen === 'home' ? (
-        <HomeScreen
-          versesCount={versesCount}
-          onPlay={() => setScreen('game')}
-          onOpenSettings={() => setScreen('settings')}
-          highlightSettings={versesCount === 1}
-        />
       ) : screen === 'settings' ? (
         <SettingsScreen
           selectedModeId={selectedModeId}
           selectedMode={selectedMode}
           onSelectMode={setSelectedModeId}
-          onBack={() => setScreen('home')}
+          onBack={() => setScreen('game')}
         />
       ) : (
         <VerseHuntScreen
           modeId={selectedModeId}
           isTutorial={versesCount < TUTORIAL_ROUNDS}
           tutorialRound={Math.min(versesCount + 1, TUTORIAL_ROUNDS)}
-          onBack={() => setScreen('home')}
+          onOpenSettings={() => setScreen('settings')}
           onVersePlayed={incrementVersesCount}
         />
       )}
