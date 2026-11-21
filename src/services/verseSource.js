@@ -98,7 +98,8 @@ function pickVerse(candidates) {
   const topN = Math.max(6, Math.ceil(ranked.length * 0.4));
   const top = ranked.slice(0, topN);
 
-  const picked = top[Math.floor(Math.random() * top.length)]?.verse ?? verses[0];
+  const picked = top[Math.floor(Math.random() * top.length)]?.verse;
+  if (!picked) throw new Error('Nenhum versiculo elegivel com palavras de pelo menos 3 letras.');
   markSeen(picked.id);
   return picked;
 }
@@ -113,7 +114,8 @@ function resolveVerseCandidates(currentId, options = {}) {
   const available = verses.filter(
     (verse) => verse.id !== currentId && countWords(verse.text) <= MAX_VERSE_WORDS
   );
-  const metrics = available.map((verse) => buildVerseMetrics(verse, options));
+  const metrics = available.map((verse) => buildVerseMetrics(verse, options))
+    .filter((entry) => entry.targetWordCount > 0);
   return metrics.map((entry) => ({
     ...entry,
     score: scoreVerse(entry, options),
@@ -126,6 +128,6 @@ export function getInitialVerse(options = {}) {
 
 export function getRandomVerse(currentId, options = {}) {
   const candidates = resolveVerseCandidates(currentId, options);
-  if (!candidates.length) return verses[0];
+  if (!candidates.length) return pickVerse(resolveVerseCandidates(undefined, options));
   return pickVerse(candidates);
 }

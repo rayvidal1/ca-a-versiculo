@@ -78,11 +78,11 @@ function resolveTargetWordCount(totalCandidates, options = {}) {
 }
 
 export function selectTargetWords(text, options = {}) {
-  const preferredMinWordLength = options.minWordLength ?? 4;
-  const fallbackMinWordLength = Math.min(
+  const preferredMinWordLength = Math.max(3, options.minWordLength ?? 4);
+  const fallbackMinWordLength = Math.max(3, Math.min(
     preferredMinWordLength,
-    options.minFallbackWordLength ?? 2
-  );
+    options.minFallbackWordLength ?? 3
+  ));
   const maxWordLength = options.maxWordLength ?? Infinity;
   const minimumDesiredCount =
     options.minTargetWordCount ??

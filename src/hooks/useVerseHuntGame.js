@@ -74,6 +74,7 @@ function createGameState(verse, options) {
   const requestedWordRange = resolveRequestedWordRange(verse, options);
   const initialVerseState = processVerseForHunt(verse, options);
   const maxAvailableCount = initialVerseState.targetWords.length;
+  if (!maxAvailableCount) throw new Error('Versiculo sem palavras validas de pelo menos 3 letras.');
   const preferredMinimumCount = Math.min(maxAvailableCount, requestedWordRange.min);
   let lastError = null;
 

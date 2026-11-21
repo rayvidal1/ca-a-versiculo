@@ -495,6 +495,11 @@ export function getCellKey(cell) {
 }
 
 export function generateWordSearchGrid(targetWords, options = {}) {
+  if (!targetWords.length || targetWords.some((word) =>
+    word.normalized.length < 3 || (word.letters ?? word.normalized).length < 3
+  )) {
+    throw new Error('A grade exige palavras de pelo menos 3 letras.');
+  }
   const maxAttempts = options.maxAttempts ?? 300;
   let lastError = null;
 

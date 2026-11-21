@@ -10,7 +10,7 @@ const verses = require('../src/data/verses.json');
 const sources = new Map();
 
 // Execute the real modules and hooks; native UI/audio/storage are replaced in memory.
-function harness() {
+function harness({ verseData = verses } = {}) {
   const slots = [], effects = [], timers = [], cache = new Map();
   let cursor = 0, dirty = false, renderFn, output;
   const stats = { victories: 0, successes: 0, haptics: 0, stateUpdates: 0, animations: [] };
@@ -62,6 +62,10 @@ function harness() {
     file = path.resolve(root, file);
     if (cache.has(file)) return cache.get(file).exports;
     const module = { exports: {} }; cache.set(file, module);
+    if (file.endsWith('.json')) {
+      module.exports = file.endsWith('verses.json') ? verseData : JSON.parse(fs.readFileSync(file, 'utf8'));
+      return module.exports;
+    }
     if (!sources.has(file)) sources.set(file, babel.transformSync(fs.readFileSync(file, 'utf8'), {
       filename: file, babelrc: false, configFile: false,
       presets: ['babel-preset-expo'],
@@ -72,6 +76,9 @@ function harness() {
       if (name === 'react') return react;
       if (name.includes('jsx-runtime')) return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
       if (name === 'react-native') return native;
+      if (name === '@react-native-async-storage/async-storage') return {
+        getItem: async () => null, setItem: async () => {},
+      };
       if (name.includes('useSoundEffect')) return { useSoundEffect: () => () => stats.successes++ };
       if (name.includes('useVictorySound')) return { useVictorySound: () => () => stats.victories++ };
       if (name.includes('/components/')) return { __esModule: true, default: path.basename(name, '.js') };
@@ -127,21 +134,23 @@ function find(tree, type) {
   return null;
 }
 
-test('134 verses generate valid grids in all three modes, including previous failures', () => {
+test('134 verses generate 3+ letter targets in all modes and five tutorial stages', () => {
   const h = harness();
-  const { verseHuntModes } = h.load('src/constants/verseHuntModes.js');
+  const { verseHuntModes, getTutorialOptions } = h.load('src/constants/verseHuntModes.js');
   const { useVerseHuntGame } = h.load('src/hooks/useVerseHuntGame.js');
   const { findMatchedPlacement } = h.load('src/utils/validation.js');
   const eligible = verses.filter((v) => v.text.trim().split(/\s+/).length <= 28);
   assert.equal(eligible.length, 134);
   let current, options;
   h.mount(() => useVerseHuntGame(current ?? eligible[0], options ?? verseHuntModes[0].gameOptions));
-  for (const mode of verseHuntModes) {
+  for (const mode of [...verseHuntModes, ...Array.from({ length: 5 }, (_, i) => ({ id: `tutorial${i + 1}`, gameOptions: getTutorialOptions(i + 1) }))]) {
     for (const verse of eligible) {
       current = verse; options = mode.gameOptions;
       const game = h.flush();
       assert.equal(game.error, null, `${mode.id}/${verse.id}`);
       assert.ok(game.placements.length > 0);
+      assert.ok(game.verse.targetWords.every((word) => word.normalized.length >= 3 && word.letters.length >= 3));
+      assert.ok(game.verse.tokens.filter((token) => token.isTarget).every((token) => token.normalized.length >= 3));
       for (const placement of game.placements) {
         assert.ok(options.directionDistribution[placement.directionId] > 0);
         const word = game.verse.targetWords.find((w) => w.normalized === placement.word);
@@ -172,6 +181,43 @@ test('selection and fallback exclude words impossible in the permitted direction
   assert.equal(game.error, null);
   assert.equal(game.placements.length, 1, 'fallback reduces an overcrowded grid');
   assert.ok(game.placements.every((p) => p.word.length <= 3));
+});
+
+test('short words never become objectives, even with permissive options or sparse verses', () => {
+  const h = harness();
+  const { generateWordSearchGrid } = h.load('src/utils/wordSearch.js');
+  assert.throws(() => generateWordSearchGrid([{ normalized: 'EU' }]), /3 letras/);
+  assert.throws(() => generateWordSearchGrid([]), /3 letras/);
+  const { selectTargetWords, processVerseForHunt } = h.load('src/utils/verseProcessing.js');
+  for (const randomWordSelection of [false, true]) {
+    const options = { rows: 1, cols: 3, minWordLength: 1, minFallbackWordLength: 1,
+      targetWordCount: 10, randomWordSelection, directionDistribution: { right: 1 } };
+    const verse = { id: 'sparse', text: 'a o eu tu ti luz paz adversidade' };
+    assert.deepEqual(selectTargetWords(verse.text, options).map((word) => word.normalized).sort(), ['LUZ', 'PAZ']);
+    const processed = processVerseForHunt(verse, options);
+    assert.ok(processed.tokens.filter((token) => token.isTarget).every((token) => token.normalized.length >= 3));
+    const gameHarness = harness();
+    const { useVerseHuntGame } = gameHarness.load('src/hooks/useVerseHuntGame.js');
+    const game = gameHarness.mount(() => useVerseHuntGame(verse, { ...options, maxAttempts: 1 }));
+    assert.equal(game.error, null);
+    assert.equal(game.placements.length, 1);
+    assert.ok(game.placements[0].word.length >= 3);
+  }
+  const emptyHarness = harness();
+  const { useVerseHuntGame } = emptyHarness.load('src/hooks/useVerseHuntGame.js');
+  const empty = emptyHarness.mount(() => useVerseHuntGame({ id: 'short', text: 'eu tu ti' }, { minWordLength: 1 }));
+  assert.ok(empty.error, 'must not expose a zero-objective game');
+});
+
+test('verse source excludes ineligible verses and its fallback only returns valid candidates', () => {
+  const valid = { id: 'valid', text: 'luz paz' };
+  const h = harness({ verseData: [{ id: 'short', text: 'eu tu ti' }, valid] });
+  const { getInitialVerse, getRandomVerse } = h.load('src/services/verseSource.js');
+  const options = { minWordLength: 1, minFallbackWordLength: 1, targetWordCount: 5 };
+  assert.equal(getInitialVerse(options).id, valid.id);
+  assert.equal(getRandomVerse(valid.id, options).id, valid.id);
+  const empty = harness({ verseData: [{ id: 'short', text: 'eu tu ti' }] }).load('src/services/verseSource.js');
+  assert.throws(() => empty.getInitialVerse(options), /elegivel/);
 });
 
 test('manual and guide completion count once and automatically advance after 1300ms', () => {
